@@ -33,11 +33,12 @@ def main():
     for event in app.stream(state, config):
         for node_name, node_state in event.items():
             phase = node_state.get("phase", "")
-            status = node_state.get("phase_status", {}).get(phase, "?")
-            print(f"  -> [{phase}] status={status}")
+            ps = node_state.get("phase_status", {}).get(phase, {})
+            s = ps.get("status", "?") if isinstance(ps, dict) else str(ps)
+            print(f"  -> [{phase}] status={s}")
 
     # Print final state summary
-    final_state = app.get_state(app.get_state_history(None).__next__().config)
+    final_state = app.get_state(config)
     print("\n" + "=" * 60)
     print("Pipeline complete. Final state:")
     print(f"  Phase status: {final_state.values.get('phase_status', {})}")
