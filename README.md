@@ -56,6 +56,45 @@ python run_pipeline.py
 Without API key: Calculate + Design phases run; Research + Synthesis gracefully degrade.
 With API key: All 4 phases execute end-to-end.
 
+## LangSmith Studio Visualization
+
+Visualize and debug the pipeline graph in LangSmith Studio.
+
+### Setup
+
+```bash
+# Copy env template and add your keys
+cp .env.example .env
+# Edit .env with your LangSmith API key
+```
+
+```bash
+# Start the LangGraph dev server
+langgraph dev
+```
+
+This reads `langgraph.json`, starts a local API server, and LangSmith Studio connects to it.
+
+### What You See
+
+| View | Shows |
+|------|-------|
+| Graph canvas | 4 phase nodes + routing edges |
+| Tracing | Each pipeline run as a trace tree |
+| State snapshots | `phase_status`, `winding_params`, etc. per step |
+| Error visualization | Failed nodes highlighted with traceback |
+
+### LangSmith Tracing (Standalone)
+
+Without Studio, runs are automatically logged to LangSmith when env vars are set:
+
+```bash
+set LANGSMITH_TRACING=true
+set LANGSMITH_API_KEY=lsv2_...
+set LANGSMITH_PROJECT=synrm-agent
+python run_pipeline.py
+```
+
 ## Module Reference
 
 ### Graph (`agent/graph.py`)

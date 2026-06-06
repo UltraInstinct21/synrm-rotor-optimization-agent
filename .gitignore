@@ -1,0 +1,7 @@
+.chroma/
+__pycache__/
+*.pyc
+.env
+optimization_results*.csv
+best_so_far*.mot
+*.bak

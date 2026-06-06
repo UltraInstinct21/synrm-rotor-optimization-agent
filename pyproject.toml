@@ -1,0 +1,18 @@
+[project]
+name = "synrm-agent"
+version = "1.0.0"
+description = "SynRM Multi-Agent Pipeline — LangGraph state machine for Motor-CAD automation"
+requires-python = ">=3.13"
+dependencies = [
+    "langgraph>=0.4.0",
+    "langgraph-cli>=0.4.0",
+    "chromadb>=0.6.0",
+    "sentence-transformers>=3.0.0",
+    "openai>=1.50.0",
+    "langchain-core>=0.3.0",
+    "numpy>=2.0.0",
+    "pydantic>=2.0.0",
+]
+
+[tool.langgraph]
+export_format = "langgraph_api_json"
