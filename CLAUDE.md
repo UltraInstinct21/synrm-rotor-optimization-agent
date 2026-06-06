@@ -156,8 +156,29 @@ best_so_far*.mot
 
 ---
 
+### Error Handling
+
+Each phase has 3-layer protection:
+1. **Node-level try/except** — catches failures, sets `phase_status[phase]=failed`
+2. **`safe_node_wrapper`** in `graph.py` — catches node crashes, logs traceback
+3. **`@retry` decorator** on ChromaDB ops — 2 attempts with exponential backoff
+
+**Graceful degradation:**
+- No API key → Research/Synthesis fail → router skips to Calculate
+- No Motor-CAD → Design parses .mot without PyMotorCAD
+- LLM timeout → falls through with empty results
+- FEA timeout → optimization returns error for that candidate
+
+### Quick Start
+
+```bash
+set OPENROUTER_API_KEY=sk-or-v1-...
+python run_pipeline.py
+```
+
 ## Links
 
+- README: `README.md`
 - Design spec: `docs/superpowers/specs/2026-06-06-synrm-multi-agent-design.md`
 - Implementation plan: `docs/superpowers/plans/2026-06-06-synrm-multi-agent-implementation.md`
 - Existing wiki: `D:\SRM\Motor _CAD\ScriptFiles\CLAUDE.md` (wiki schema, Part 1)
