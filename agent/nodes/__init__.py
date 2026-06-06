@@ -1,5 +1,6 @@
 """Pipeline node implementations — one function per phase."""
 from agent.nodes.research import research_node
+from agent.nodes.calculate import calculate_node
 
 # Stubs for phases not yet implemented
 from agent.state import AgentState
@@ -11,19 +12,6 @@ def synthesis_node(state: AgentState) -> AgentState:
     state["phase_status"]["synthesis"] = {"status": "done", "error": None}
     state["wiki_synthesis"] = state.get("wiki_synthesis", [])
     state["wiki_synthesis"].append("synthesis/stub")
-    return state
-
-
-def calculate_node(state: AgentState) -> AgentState:
-    """Phase 3 — Calculation (stub)."""
-    state["phase"] = "calculate"
-    state["phase_status"]["calculate"] = {"status": "done", "error": None}
-    state["winding_params"] = {
-        "kw": 0.9576,
-        "turns_per_slot": 24,
-        "fill_factor": 0.45,
-        "note": "stub — replace with real calculation",
-    }
     return state
 
 
