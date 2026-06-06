@@ -2,71 +2,88 @@
 
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
-from agent.state import AgentState
+from agent.state import AgentState, PhaseStatus
+
+
+def get_next_phase(current: str) -> str | None:
+    """Return the next phase after current, or None if last."""
+    order = ["research", "synthesis", "calculate", "design"]
+    try:
+        idx = order.index(current)
+        if idx + 1 < len(order):
+            return order[idx + 1]
+        return None
+    except ValueError:
+        return "research"
+
+
+def safe_node_wrapper(node_func, state: AgentState) -> dict:
+    """Wrap a node execution in try/except, marking phase as failed on error."""
+    try:
+        result = node_func(state)
+        return result
+    except Exception as e:
+        import traceback
+        error_msg = f"{type(e).__name__}: {e}\n{traceback.format_exc()}"
+        print(f"  [ERROR] Phase {state.get('phase', '?')} failed: {error_msg}")
+        return {
+            "phase_status": {
+                **state.get("phase_status", {}),
+                state.get("phase", ""): PhaseStatus(status="failed", error=error_msg),
+            }
+        }
 
 
 def phase_router(state: AgentState) -> str:
     """Route to the next phase based on current phase_status."""
     status = state.get("phase_status", {})
 
-    # If no phase started yet, start with research
     if not status:
         return "research"
 
-    # Check completed phases in order
     order = ["research", "synthesis", "calculate", "design"]
     current = state.get("phase", "research")
 
-    # Find current index and route to next
     try:
         idx = order.index(current)
     except ValueError:
         return "research"
 
-    # If current phase done, move to next
     current_status = status.get(current, {}).get("status", "")
+
     if current_status == "done":
-        if idx + 1 < len(order):
-            return order[idx + 1]
-        return END  # all phases done
+        next_ph = get_next_phase(current)
+        return next_ph if next_ph else END
 
-    # If current phase failed, check if we can skip
     if current_status == "failed":
-        # Try to move to next phase
-        if idx + 1 < len(order):
-            return order[idx + 1]
-        return END
+        next_ph = get_next_phase(current)
+        return next_ph if next_ph else END
 
-    # Continue current phase
     return current
 
 
 def research_node_wrapper(state: AgentState) -> AgentState:
     """Wrapper for Phase 1 — Research node."""
     from agent import nodes
-
-    return nodes.research_node(state)
+    return safe_node_wrapper(nodes.research_node, state)
 
 
 def synthesis_node_wrapper(state: AgentState) -> AgentState:
     """Wrapper for Phase 2 — Synthesis node."""
     from agent import nodes
-
-    return nodes.synthesis_node(state)
+    return safe_node_wrapper(nodes.synthesis_node, state)
 
 
 def calculate_node_wrapper(state: AgentState) -> AgentState:
     """Wrapper for Phase 3 — Calculation node."""
     from agent import nodes
-
-    return nodes.calculate_node(state)
+    return safe_node_wrapper(nodes.calculate_node, state)
 
 
 def design_node_wrapper(state: AgentState) -> AgentState:
     """Wrapper for Phase 4 — Design & Optimization node."""
     from agent import nodes
-
-    return nodes.design_node(state)
+    return safe_node_wrapper(nodes.design_node, state)
 
 
 def build_graph() -> StateGraph:

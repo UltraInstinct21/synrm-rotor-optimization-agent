@@ -4,6 +4,7 @@ import os
 import chromadb
 from chromadb.config import Settings
 from chromadb.errors import NotFoundError as ChromaNotFoundError
+from agent.tools.retry import retry
 
 CHROMA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".chroma")
 
@@ -48,6 +49,7 @@ def ensure_collections():
         get_collection(name)
 
 
+@retry(max_attempts=2, delay=1.0)
 def add_document(
     collection_name: str,
     doc_id: str,
