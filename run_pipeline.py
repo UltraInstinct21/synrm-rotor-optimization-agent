@@ -27,6 +27,8 @@ def _fmt_event(phase: str, update: dict) -> str | None:
     Returns None when the update carries no meaningful phase_status info
     (e.g. an empty intermediate event that should be skipped).
     """
+    if not isinstance(update, dict):
+        return None  # skip non-dict events (internal LangGraph tuples, etc.)
     ps = update.get("phase_status", {})
     raw = ps.get(phase, {})
     if isinstance(raw, dict):

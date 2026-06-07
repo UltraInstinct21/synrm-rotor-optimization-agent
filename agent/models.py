@@ -1,7 +1,11 @@
 """OpenRouter model configuration — per-node LLM selection using free open-source models."""
 
 import os
+from dotenv import load_dotenv
 from openai import OpenAI
+
+# Load .env file from project root so OPENROUTER_API_KEY is picked up
+load_dotenv()
 
 _client = None
 
