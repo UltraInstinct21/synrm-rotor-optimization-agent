@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from agent.state import AgentState
+from agent.tools.rotor import default_barrier_params
 
 
 def _fundamental_sizing(spec: dict) -> dict:
@@ -161,7 +162,8 @@ def calculate_node(state: AgentState) -> AgentState:
 
         # 3. Magnetic parameters
         magnetic = _magnetic_parameters(spec, sizing)
-        state["barrier_params"] = magnetic  # merge magnetic params
+        state["derived_params"]["magnetic"] = magnetic
+        state["barrier_params"] = default_barrier_params()
 
         # 4. Thermal constraints
         thermal = _thermal_constraints(spec, winding)
@@ -176,7 +178,7 @@ def calculate_node(state: AgentState) -> AgentState:
         if not state.get("winding_params"):
             state["winding_params"] = {"kw": 0.9576, "turns_per_slot": 24}
         if not state.get("barrier_params"):
-            state["barrier_params"] = {"airgap_mm": 0.5}
+            state["barrier_params"] = default_barrier_params()
 
     if errors:
         state["error_log"] = state.get("error_log", [])

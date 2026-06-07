@@ -1,5 +1,6 @@
 """Phase 1 — Research Node: web ingest, chunking, embedding, entity extraction, wiki writing."""
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
 from agent.state import AgentState
@@ -31,13 +32,28 @@ def research_node(state: AgentState) -> AgentState:
     errors = []
 
     try:
-        # 1. Research the motor topic from motor_spec
-        topic = (
-            f"SynRM {state['motor_spec'].get('power_kw', 45)}kW IE5 rotor design: "
-            f"{state['motor_spec'].get('poles', 4)}-pole, "
-            f"barrier optimization, efficiency >= {state['motor_spec'].get('target_efficiency', 96)}%"
-        )
-        research_text = search_research_topic(topic)
+        # 1. Research multiple sub-topics in parallel (map-reduce pattern)
+        motor_spec = state["motor_spec"]
+        sub_topics = [
+            (
+                f"SynRM {motor_spec.get('power_kw', 45)}kW IE5 barrier rotor geometry: "
+                f"layer dimensions, bridges, webs, angle offsets "
+                f"for {motor_spec.get('poles', 4)}-pole rotor"
+            ),
+            (
+                f"SynRM {motor_spec.get('power_kw', 45)}kW IE5 winding configuration: "
+                f"slot/pole combination, turns, fill factor, wire gauge "
+                f"for {motor_spec.get('voltage_v', 580)}V supply"
+            ),
+            (
+                f"SynRM {motor_spec.get('power_kw', 45)}kW IE5 magnetic materials: "
+                f"lamination steel grades, saturation, saliency ratio, "
+                f"efficiency >= {motor_spec.get('target_efficiency', 96)}%"
+            ),
+        ]
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            research_texts = list(pool.map(search_research_topic, sub_topics))
+        research_text = "\n\n---\n\n".join(t for t in research_texts if t)
 
         # 2. Chunk the research text
         source_id = f"research-{datetime.now().strftime('%Y%m%d-%H%M%S')}"

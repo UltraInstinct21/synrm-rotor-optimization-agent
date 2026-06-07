@@ -4,14 +4,16 @@ import os
 from datetime import datetime
 
 from agent.state import AgentState
+from agent.nodes.optimization import optimization_sub_node
 from agent.tools.pymotorcad import (
     launch_motorcad,
     discover_variables,
-    safe_get,
     safe_set,
     save_backup,
     show_magnetic_context,
 )
+from agent.tools.rotor import ALLOWED_BARRIER_VARIABLES, check_geometry_constraints, default_barrier_params
+from agent.memory import load_best_params, save_optimization_result
 
 
 def _parse_mot_file(path: str) -> dict[str, dict]:
@@ -57,9 +59,27 @@ def _get_default_mot_path() -> str:
 
 def design_node(state: AgentState) -> AgentState:
     """Execute Phase 4: explore .mot, discover variables, set parameters."""
+    # HITL skip check — user declined optimization at approval gate
+    if state.get("approval", {}).get("proceed", True) is False:
+        state["phase"] = "design"
+        state["phase_status"]["design"] = {
+            "status": "skipped",
+            "error": "User skipped optimization at approval gate",
+        }
+        return state
+
     state["phase"] = "design"
     state["phase_status"]["design"] = {"status": "running", "error": None}
     errors = []
+    opt_failed = False
+
+    # Long-term memory: seed barrier_params from prior run, if available
+    store = state.get("_store")
+    if store:
+        remembered = load_best_params(store, state.get("motor_spec", {}))
+        if remembered and not state.get("barrier_params"):
+            state["barrier_params"] = remembered
+            errors.append(f"Memory: seeded barrier_params from prior run ({len(remembered)} keys)")
 
     # 1. Parse .mot file (no PyMotorCAD needed for parsing)
     mot_path = state.get("mot_file_path", _get_default_mot_path())
@@ -87,25 +107,40 @@ def design_node(state: AgentState) -> AgentState:
             ctx = show_magnetic_context(mc)
             state["derived_params"]["pre_change_context"] = ctx
 
-            # Set winding parameters from state if available
-            wp = state.get("winding_params", {})
-            for var, val in wp.items():
-                # Only set if we have a numeric value
-                if isinstance(val, (int, float)):
-                    safe_set(mc, var, val)
-
-            # Set barrier parameters
-            bp = state.get("barrier_params", {})
-            for var, val in bp.items():
-                if isinstance(val, (int, float)):
-                    safe_set(mc, var, val)
+            bp = state.get("barrier_params") or default_barrier_params()
+            check_geometry_constraints(bp)
+            for var in ALLOWED_BARRIER_VARIABLES:
+                safe_set(mc, var, bp[var])
 
     except Exception as e:
         errors.append(f"PyMotorCAD error (non-fatal): {e}")
         # Graceful degradation: continue with parsed .mot data
 
-    # Mark done (success even if PyMotorCAD unavailable — we have parsed sections)
-    state["phase_status"]["design"] = {"status": "done", "error": None}
+    # 3. Optimization sub-node — failure here marks design as failed
+    try:
+        bp = state.get("barrier_params") or default_barrier_params()
+        check_geometry_constraints(bp)
+        state["barrier_params"] = bp
+        optimization_update = optimization_sub_node(state)
+        state.update(optimization_update)
+
+        # Save results to long-term memory
+        if store and optimization_update.get("optimization_results"):
+            save_optimization_result(
+                store,
+                state.get("motor_spec", {}),
+                bp,
+                optimization_update["optimization_results"],
+            )
+    except Exception as e:
+        errors.append(f"Optimization error: {e}")
+        opt_failed = True
+
+    # Mark status: optimization failure → failed; PyMotorCAD-only failure → done (degraded)
+    state["phase_status"]["design"] = {
+        "status": "failed" if opt_failed else "done",
+        "error": "; ".join(errors) if (opt_failed and errors) else None,
+    }
     state["error_log"] = state.get("error_log", [])
     for err in errors:
         state["error_log"].append({

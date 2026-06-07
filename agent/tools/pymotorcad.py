@@ -1,6 +1,5 @@
-"""PyMotorCAD wrapper — safe launch, variable discovery, get/set wrappers with anti-hallucination guards."""
+"""PyMotorCAD wrapper with official API names and loud failures."""
 
-import subprocess
 import multiprocessing
 import time
 import os
@@ -20,58 +19,61 @@ def launch_motorcad(mot_file_path: str, visible: bool = False) -> Any:
         MotorCAD object (PyMotorCAD mc) or None if launch fails.
     """
     try:
-        import motorcad  # type: ignore
-    except ImportError:
-        raise RuntimeError("PyMotorCAD not installed. Run: pip install motorcad")
+        import ansys.motorcad.core as pymotorcad
+    except ImportError as e:
+        raise RuntimeError("PyMotorCAD not installed: ansys.motorcad.core import failed") from e
 
-    app = motorcad.AppClass()
-    app.setvisible(visible)
-    app.openmotordata(mot_file_path)
-    return app
+    mc = pymotorcad.MotorCAD(
+        open_new_instance=True,
+        use_blackbox_licence=True,
+        keep_instance_open=False,
+    )
+    if hasattr(mc, "set_variable"):
+        mc.set_variable("MessageDisplayState", 2 if not visible else 0)
+    mc.load_from_file(mot_file_path)
+    return mc
 
 
-def discover_variables(mc: Any, prefix: str = "") -> list[str]:
-    """Discover available Motor-CAD variable names matching prefix.
-
-    Rule 1 from AGENTS.md: always discover before first use.
-    """
+def discover_variables(mc: Any, keyword: str = "", prefix: str = "") -> list[str]:
+    """Discover available Motor-CAD variable names matching keyword or prefix."""
     try:
-        all_vars = mc.getvariablenames(0)
-        if prefix:
-            return [v for v in all_vars if v.startswith(prefix)]
-        return list(all_vars)
-    except Exception:
-        return []
-
-
-def safe_get(mc: Any, var_name: str, default: Any = None) -> Any:
-    """Get a Motor-CAD variable with error handling.
-
-    AGENTS.md Rule 3: safe_get/safe_set wrappers prevent crashes on missing vars.
-    """
-    try:
-        return mc.getvariable(var_name)
-    except Exception:
-        return default
-
-
-def safe_set(mc: Any, var_name: str, value: Any) -> bool:
-    """Set a Motor-CAD variable with validation.
-
-    Returns True if set succeeded, False otherwise.
-    AGENTS.md Rule 3 + Rule 5: save before changing, read before changing.
-    """
-    try:
-        old_val = safe_get(mc, var_name)
-        if isinstance(value, str):
-            mc.setvariable(var_name, value)
+        if hasattr(mc, "get_variable_names"):
+            all_vars = list(mc.get_variable_names())
         else:
-            mc.setvariable(var_name, float(value))
-        # Verify
-        new_val = safe_get(mc, var_name)
-        return new_val != old_val
-    except Exception:
-        return False
+            all_vars = list(mc.getvariablenames(0))
+    except Exception as e:
+        raise RuntimeError(f"get_variable_names() failed: {e}") from e
+
+    if keyword:
+        return [v for v in all_vars if keyword.lower() in v.lower()]
+    if prefix:
+        return [v for v in all_vars if v.startswith(prefix)]
+    return all_vars
+
+
+def safe_get(mc: Any, var_name: str, label: str = "") -> Any:
+    """Get a Motor-CAD variable or raise a precise error."""
+    try:
+        if hasattr(mc, "get_variable"):
+            value = mc.get_variable(var_name)
+        else:
+            value = mc.getvariable(var_name)
+        if label:
+            print(f"  {label}: {value}")
+        return value
+    except Exception as e:
+        raise RuntimeError(f"get_variable('{var_name}') failed: {e}") from e
+
+
+def safe_set(mc: Any, var_name: str, value: Any) -> None:
+    """Set a Motor-CAD variable or raise a precise error."""
+    try:
+        if hasattr(mc, "set_variable"):
+            mc.set_variable(var_name, value)
+        else:
+            mc.setvariable(var_name, value if isinstance(value, str) else float(value))
+    except Exception as e:
+        raise RuntimeError(f"set_variable('{var_name}', {value}) failed: {e}") from e
 
 
 def safe_get_array(mc: Any, var_name: str, index: int, default: Any = None) -> Any:
@@ -93,13 +95,15 @@ def safe_set_array(mc: Any, var_name: str, index: int, value: Any) -> bool:
 
 
 def show_magnetic_context(mc: Any) -> dict:
-    """Capture magnetic context before running EMag — for logging/audit.
-
-    AGENTS.md Rule 3: show_magnetic_context() before EMag.
-    """
+    """Switch to magnetic context and capture a few useful values."""
+    if hasattr(mc, "show_magnetic_context"):
+        mc.show_magnetic_context()
     context = {}
-    for var in ["AirGap", "MLt", "Barrier_Angle", "Rotor_Dia", "StackLength"]:
-        context[var] = safe_get(mc, var)
+    for var in ["Airgap", "Rotor_Diameter", "Shaft_Dia", "Shaft_Speed_[RPM]", "PhaseAdvance"]:
+        try:
+            context[var] = safe_get(mc, var)
+        except RuntimeError:
+            context[var] = None
     return context
 
 
@@ -111,10 +115,23 @@ def save_backup(mc: Any, path: str) -> str:
     """
     backup_path = path.replace(".mot", f"_backup_{int(time.time())}.mot")
     try:
-        mc.savedata(backup_path)
-    except Exception:
-        pass
+        if hasattr(mc, "save_to_file"):
+            mc.save_to_file(backup_path)
+        else:
+            mc.savedata(backup_path)
+    except Exception as e:
+        raise RuntimeError(f"save backup failed: {e}") from e
     return backup_path
+
+
+def run_emag(mc: Any) -> None:
+    """Run an electromagnetic calculation after switching to magnetic context."""
+    if hasattr(mc, "show_magnetic_context"):
+        mc.show_magnetic_context()
+    if hasattr(mc, "do_magnetic_calculation"):
+        mc.do_magnetic_calculation()
+    else:
+        mc.domagnetic()
 
 
 def evaluate_candidate_in_process(

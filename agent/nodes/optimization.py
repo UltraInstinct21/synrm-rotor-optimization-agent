@@ -10,15 +10,27 @@ Implements Ibrahim et al. strategy from the design spec:
 
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
 from agent.state import AgentState
 from agent.tools.wiki import write_page
+from agent.tools.rotor import (
+    SEARCH_RANGES,
+    check_geometry_constraints,
+    default_barrier_params,
+    efficiency_pct,
+    log_result,
+    objective,
+    shaft_power_w,
+)
 
 # Add project root for direct imports from the v4 script
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
+
+RESULTS_CSV = r"D:\SRM\Motor _CAD\ScriptFiles\optimization_results.csv"
 
 
 def optimization_sub_node(state: AgentState) -> dict:
@@ -26,7 +38,8 @@ def optimization_sub_node(state: AgentState) -> dict:
 
     Falls back to simulated results if Motor-CAD unavailable.
     """
-    params = state.get("barrier_params", {})
+    params = state.get("barrier_params") or default_barrier_params()
+    check_geometry_constraints(params)
     results = []
 
     if _motorcad_connectable():
@@ -66,64 +79,63 @@ def _motorcad_connectable() -> bool:
         return False
 
 
-def _run_v4_optimization(params: dict) -> list[dict]:
-    """Run LHS sampling using imported v4 script functions.
+def evaluate_single(
+    candidate: dict,
+    phase_advance: float = 45.0,
+    timeout_s: int = 300,
+) -> dict:
+    """Evaluate one LHS candidate via FEA. Returns result dict or error dict.
 
-    Imports optimize_synrm_v4 functions directly and calls
-    latin_hypercube + evaluate_candidate_with_timeout.
+    Handles errors per-candidate — single failure does not fail batch.
     """
     import optimize_synrm_v4 as v4
-    import ansys.motorcad.core as pymotorcad
-
-    # Connect to Motor-CAD and load model
-    mc = pymotorcad.AppClass()
-    mc.setvisible(False)
-    mot_path = os.path.join(PROJECT_ROOT, "SynRM_45kW_IE5.mot")
-    mc.openmotordata(mot_path)
-
-    # Define barrier geometry ranges from v4 defaults
-    ranges = {
-        "L1_Dia": (70, 142),
-        "L2_Dia": (40, 100),
-        "L3_Dia": (20, 65),
-        "L1_Web": (2, 8),
-        "L2_Web": (2, 8),
-        "L3_Web": (2, 8),
-        "L1_Bridge": (0.5, 2.5),
-        "L2_Bridge": (0.5, 2.5),
-        "L3_Bridge": (0.5, 2.5),
-        "L1_Angle": (10, 30),
-        "L2_Angle": (15, 40),
-        "L3_Angle": (20, 50),
-    }
-
-    # Override with any params from state
-    ranges.update(params)
-
-    # LHS: generate candidate parameter sets
-    n_samples = 10  # reduced for demo; use 40 for full run
-    samples = v4.latin_hypercube(n_samples, ranges, seed=42)
-
-    # Evaluate each candidate with FEA
-    results = []
-    for i, candidate in enumerate(samples):
-        result = v4.evaluate_candidate_with_timeout(
-            candidate,
-            phase_advance=45.0,
-            timeout_s=300,
-        )
-        score = v4.objective(result) if "error" not in result else 999
-        results.append({
-            "iteration": i,
-            **{k: candidate.get(k, 0) for k in ranges},
-            "ShaftTorque": result.get("torque", 0),
+    try:
+        check_geometry_constraints(candidate)
+        result = v4.evaluate_candidate_with_timeout(candidate, phase_advance, timeout_s)
+        score = objective(result) if "error" not in result else 999
+        return {
+            **{k: candidate.get(k, 0) for k in SEARCH_RANGES},
+            "ShaftTorque": result.get("ShaftTorque", result.get("torque", 0)),
             "TorqueRipple": result.get("torque_ripple_pct", 0),
-            "MotorEfficiency": result.get("efficiency_pct", 0),
-            "PowerFactor": result.get("power_factor", 0),
+            "MotorEfficiency": result.get("MotorEfficiency", result.get("efficiency_pct", 0)),
+            "PowerFactor": result.get("PowerFactor", result.get("power_factor", 0)),
             "SaliencyRatio": result.get("saliency_ratio", 0),
             "score": score,
             "model_path": "",
-        })
+            "error": result.get("error"),
+        }
+    except Exception as e:
+        return {"error": str(e), "score": 999}
+
+
+def _run_v4_optimization(params: dict) -> list[dict]:
+    """Run LHS sampling with parallel candidate evaluation via ThreadPoolExecutor.
+
+    Imports optimize_synrm_v4 functions directly and evaluates
+    candidates concurrently using evaluate_single().
+    """
+    import optimize_synrm_v4 as v4
+
+    # LHS: generate candidate parameter sets
+    n_samples = 10  # reduced for demo; use 40 for full run
+    samples = v4.latin_hypercube(n_samples, SEARCH_RANGES, seed=42)
+
+    # Evaluate each candidate with FEA in parallel (map-reduce pattern)
+    results = [None] * len(samples)
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        futures = {
+            pool.submit(evaluate_single, candidate, 45.0, 300): i
+            for i, candidate in enumerate(samples)
+        }
+        for future in as_completed(futures):
+            idx = futures[future]
+            try:
+                res = future.result()
+            except Exception as e:
+                res = {"error": str(e), "score": 999}
+            res["iteration"] = idx
+            results[idx] = res
+            _log_optimization_result(idx, samples[idx], res)
 
     return results
 
@@ -131,22 +143,45 @@ def _run_v4_optimization(params: dict) -> list[dict]:
 def _simulate_results(params: dict) -> list[dict]:
     """Generate simulated results when Motor-CAD is not available."""
     results = []
-    base_torque = params.get("L1_Dia", 120) * 0.3 + 50
+    base_torque = params.get("L1_Diameter", 100) * 0.25 + 95
     for i in range(5):
+        candidate = dict(params)
+        candidate["L1_Diameter"] = min(candidate["L1_Diameter"] + i * 2, SEARCH_RANGES["L1_Diameter"][1])
         results.append({
             "iteration": i,
-            "L1_Dia": params.get("L1_Dia", 120) + i * 2,
-            "L2_Dia": params.get("L2_Dia", 85) + i * 1.5,
-            "L3_Dia": params.get("L3_Dia", 50) + i,
+            **candidate,
             "ShaftTorque": round(base_torque + i * 1.5 + (i % 3) * (-0.5), 1),
             "TorqueRipple": round(5.0 + i * 0.8, 1),
             "MotorEfficiency": round(94.0 + i * 0.3, 1),
             "PowerFactor": round(0.78 + i * 0.02, 3),
             "SaliencyRatio": round(6.0 + i * 0.2, 1),
-            "score": round(10.0 - i * 1.2, 2),
             "model_path": "",
         })
+        results[-1]["score"] = round(objective(results[-1]), 2)
+        _log_optimization_result(i, candidate, results[-1])
     return results
+
+
+def _log_optimization_result(iteration: int, params: dict, result: dict) -> None:
+    torque = float(result.get("ShaftTorque", 0) or 0)
+    input_power = float(result.get("InputPower", 0) or 0)
+    shaft_power = shaft_power_w(torque)
+    efficiency = float(result.get("MotorEfficiency", 0) or 0)
+    if not efficiency and input_power:
+        efficiency = efficiency_pct(torque, input_power)
+    log_result(
+        RESULTS_CSV,
+        iteration=iteration,
+        params=params,
+        torque=torque,
+        input_power=input_power,
+        shaft_power=shaft_power,
+        efficiency=efficiency,
+        extra={
+            "PowerFactor": result.get("PowerFactor", ""),
+            "score": result.get("score", ""),
+        },
+    )
 
 
 def _format_optimization_log(results: list[dict]) -> str:
