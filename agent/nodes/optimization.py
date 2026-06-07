@@ -33,6 +33,10 @@ if PROJECT_ROOT not in sys.path:
 RESULTS_CSV = r"D:\SRM\Motor _CAD\ScriptFiles\optimization_results.csv"
 
 
+def _log(msg: str) -> None:
+    print(f"  [optimization ] {msg}")
+
+
 def optimization_sub_node(state: AgentState) -> dict:
     """Run optimization using optimize_synrm_v4.py functions.
 
@@ -42,15 +46,20 @@ def optimization_sub_node(state: AgentState) -> dict:
     check_geometry_constraints(params)
     results = []
 
+    _log("checking Motor-CAD connectivity...")
     if _motorcad_connectable():
+        _log("Motor-CAD connected — running FEA optimization")
         try:
             results = _run_v4_optimization(params)
-        except Exception:
+        except Exception as e:
+            _log(f"FEA optimization failed ({e}), falling back to simulation")
             results = _simulate_results(params)
     else:
+        _log("Motor-CAD not available — using simulated optimization")
         results = _simulate_results(params)
 
     # Write optimization log to wiki
+    _log(f"writing {len(results)} results to wiki...")
     log_body = _format_optimization_log(results)
     write_page(
         f"Optimization Log {datetime.now().strftime('%Y-%m-%d %H:%M')}",
@@ -60,6 +69,12 @@ def optimization_sub_node(state: AgentState) -> dict:
     )
 
     best = min(results, key=lambda r: r.get("score", float("inf"))) if results else {}
+    if best:
+        _log(f"best result: score={best.get('score', '?')}, "
+             f"torque={best.get('ShaftTorque', '?')}Nm, "
+             f"eff={best.get('MotorEfficiency', '?')}%")
+    else:
+        _log("no valid optimization results")
 
     return {
         "optimization_results": results,
@@ -118,10 +133,13 @@ def _run_v4_optimization(params: dict) -> list[dict]:
 
     # LHS: generate candidate parameter sets
     n_samples = 10  # reduced for demo; use 40 for full run
+    _log(f"generating {n_samples} LHS candidate samples...")
     samples = v4.latin_hypercube(n_samples, SEARCH_RANGES, seed=42)
 
     # Evaluate each candidate with FEA in parallel (map-reduce pattern)
+    _log(f"evaluating {len(samples)} candidates via FEA (4 workers)...")
     results = [None] * len(samples)
+    completed = 0
     with ThreadPoolExecutor(max_workers=4) as pool:
         futures = {
             pool.submit(evaluate_single, candidate, 45.0, 300): i
@@ -135,6 +153,11 @@ def _run_v4_optimization(params: dict) -> list[dict]:
                 res = {"error": str(e), "score": 999}
             res["iteration"] = idx
             results[idx] = res
+            completed += 1
+            err_flag = " ERR" if res.get("error") else ""
+            _log(f"  candidate {idx+1}/{len(samples)} — "
+                 f"T={res.get('ShaftTorque', '?'):>6}Nm "
+                 f"score={res.get('score', '?'):>5}{err_flag}")
             _log_optimization_result(idx, samples[idx], res)
 
     return results
@@ -142,6 +165,7 @@ def _run_v4_optimization(params: dict) -> list[dict]:
 
 def _simulate_results(params: dict) -> list[dict]:
     """Generate simulated results when Motor-CAD is not available."""
+    _log("simulating 5 candidate evaluations...")
     results = []
     base_torque = params.get("L1_Diameter", 100) * 0.25 + 95
     for i in range(5):
@@ -158,6 +182,9 @@ def _simulate_results(params: dict) -> list[dict]:
             "model_path": "",
         })
         results[-1]["score"] = round(objective(results[-1]), 2)
+        _log(f"  candidate {i+1}/5 — "
+             f"T={results[-1]['ShaftTorque']:>5}Nm "
+             f"score={results[-1]['score']:>5}")
         _log_optimization_result(i, candidate, results[-1])
     return results
 

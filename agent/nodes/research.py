@@ -23,6 +23,12 @@ class ExtractedEntity(BaseModel):
     tags: list[str] = []
 
 
+def _log(state: AgentState, msg: str) -> None:
+    """Print a live progress line for the current phase."""
+    phase = state.get("phase", "?")
+    print(f"  [{phase:<12}] {msg}")
+
+
 def research_node(state: AgentState) -> AgentState:
     """Execute Phase 1: research, chunk, embed, extract, wiki-write."""
     state["phase"] = "research"
@@ -33,6 +39,7 @@ def research_node(state: AgentState) -> AgentState:
 
     try:
         # 1. Research multiple sub-topics in parallel (map-reduce pattern)
+        _log(state, "web searching 3 sub-topics (geometry, winding, materials)...")
         motor_spec = state["motor_spec"]
         sub_topics = [
             (
@@ -54,16 +61,22 @@ def research_node(state: AgentState) -> AgentState:
         with ThreadPoolExecutor(max_workers=3) as pool:
             research_texts = list(pool.map(search_research_topic, sub_topics))
         research_text = "\n\n---\n\n".join(t for t in research_texts if t)
+        _log(state, f"web returned {len(research_text)} chars of content")
 
         # 2. Chunk the research text
+        _log(state, "chunking text...")
         source_id = f"research-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
         chunks = list(chunk_text(research_text, source_id=source_id))
 
+        _log(state, f"generated {len(chunks)} chunks")
+
         # 3. Embed all chunks
+        _log(state, "embedding chunks (sentence-transformers)...")
         texts = [c["text"] for c in chunks]
         embeddings = embed_texts(texts)
 
         # 4. Add to ChromaDB
+        _log(state, f"adding {len(chunks)} chunks to ChromaDB...")
         for i, (chunk, emb) in enumerate(zip(chunks, embeddings)):
             doc_id = f"{source_id}-chunk-{i}"
             add_document(
@@ -80,6 +93,7 @@ def research_node(state: AgentState) -> AgentState:
             )
 
         # 5. Extract entities/concepts via LLM
+        _log(state, "calling LLM for entity/concept extraction (may take 30-60s)...")
         system_prompt = (
             "You are a knowledge extraction assistant for SynRM motor design. "
             "Extract entities (specific named things: researchers, motors, companies) "
@@ -99,6 +113,7 @@ def research_node(state: AgentState) -> AgentState:
         concepts_created = []
 
         if extraction_result:
+            _log(state, f"LLM extracted {extraction_result.type}: {extraction_result.title}")
             page_type = extraction_result.type
             title = extraction_result.title
             # Write the page — wiki.write_page handles path creation
@@ -113,8 +128,11 @@ def research_node(state: AgentState) -> AgentState:
                 entities_created.append(path)
             else:
                 concepts_created.append(path)
+        else:
+            _log(state, "LLM returned no extraction result (graceful degradation)")
 
         # 7. Update wiki index
+        _log(state, "updating wiki index...")
         update_index()
 
         # Mark done

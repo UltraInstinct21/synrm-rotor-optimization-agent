@@ -143,6 +143,11 @@ def _thermal_constraints(spec: dict, winding: dict) -> dict:
     }
 
 
+def _log(state: AgentState, msg: str) -> None:
+    phase = state.get("phase", "?")
+    print(f"  [{phase:<12}] {msg}")
+
+
 def calculate_node(state: AgentState) -> AgentState:
     """Execute Phase 3: derive all motor parameters from spec."""
     state["phase"] = "calculate"
@@ -153,19 +158,23 @@ def calculate_node(state: AgentState) -> AgentState:
         spec = state.get("motor_spec", {})
 
         # 1. Fundamental sizing
+        _log(state, "fundamental sizing (torque, losses, thermal budget)...")
         sizing = _fundamental_sizing(spec)
         state["derived_params"] = {**state.get("derived_params", {}), **sizing}
 
         # 2. Winding calculation
+        _log(state, "winding calculation (turns, fill factor, wire gauge)...")
         winding = _winding_calculation(spec, sizing)
         state["winding_params"] = winding
 
         # 3. Magnetic parameters
+        _log(state, "magnetic circuit parameters (airgap, barriers, saliency)...")
         magnetic = _magnetic_parameters(spec, sizing)
         state["derived_params"]["magnetic"] = magnetic
         state["barrier_params"] = default_barrier_params()
 
         # 4. Thermal constraints
+        _log(state, "thermal constraints (cooling, insulation, temps)...")
         thermal = _thermal_constraints(spec, winding)
         state["derived_params"]["thermal"] = thermal
 
