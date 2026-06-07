@@ -5,3 +5,6 @@ __pycache__/
 optimization_results*.csv
 best_so_far*.mot
 *.bak
+.claude/
+.langgraph_api/
+*_backup_*.mot
