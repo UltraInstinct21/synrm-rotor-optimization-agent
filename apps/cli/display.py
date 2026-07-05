@@ -1,24 +1,25 @@
-"""Terminal display utilities — header, separators, report rendering."""
+"""Terminal display utilities — header, separators, report rendering.
+
+Uses only ASCII characters for Windows cp1252 compatibility.
+"""
 
 from __future__ import annotations
 
 import shutil
 
-# ── Characters ────────────────────────────────────────────────────────
-_TERM_WIDTH = shutil.get_terminal_size(fallback=80).columns
+_TERM_WIDTH = shutil.get_terminal_size(fallback=(80, 24)).columns
 
 
 def print_header() -> None:
-    """Render the motor-deepagent header."""
+    """Render the motor-deepagent header (ASCII-safe)."""
     print()
     print("=" * _TERM_WIDTH)
-    title = "motor-deepagent  ⚡  terminal engineering assistant"
-    print(f"  {title}")
+    print("  motor-deepagent >> terminal engineering assistant")
     print("=" * _TERM_WIDTH)
     print()
 
 
-def print_separator(char: str = "─") -> None:
+def print_separator(char: str = "-") -> None:
     """Print a horizontal rule."""
     print(f"  {char * min(_TERM_WIDTH - 2, 60)}")
 
@@ -34,12 +35,12 @@ def print_report(title: str, sections: list[tuple[str, str]]) -> None:
         Each section is rendered as ``label: content``.
     """
     print()
-    print(f"  ┌─ {title}")
-    print(f"  │")
+    print(f"  == {title} ==")
     for label, content in sections:
-        # Word-wrap long content.
         for line in content.split("\n"):
-            print(f"  ├  {label}: {line}" if label else f"  │  {line}")
-            label = ""  # only show label on first line
-    print(f"  └─")
+            if label:
+                print(f"  {label}: {line}")
+                label = ""
+            else:
+                print(f"  {line}")
     print()

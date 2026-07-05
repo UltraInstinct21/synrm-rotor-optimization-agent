@@ -8,12 +8,13 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import asyncio
 import sys
 
 from apps.cli.chat import interactive_repl
 from apps.cli.display import print_header, print_report
-from src.agent.build_agent import build_orchestrator
 from src.agent.orchestration_helpers import classify_request
+from src.agent.runtime import run_request
 from src.config.settings import OPENROUTER_API_KEY
 
 
@@ -41,36 +42,37 @@ def main() -> None:
 
     if not OPENROUTER_API_KEY:
         print(
-            "⚠️  OPENROUTER_API_KEY not set.  Set it in .env or as an env var.",
+            "  ⚠️  OPENROUTER_API_KEY not set.  Set it in .env or as an env var.",
             file=sys.stderr,
         )
         sys.exit(1)
-
-    # Build the orchestrator config.
-    orchestrator = build_orchestrator(model=args.model)
 
     print_header()
 
     if args.request:
         # Single-shot mode.
-        category = classify_request(args.request)
-        print(f"  Task category: {category}\n")
+        result = asyncio.run(run_request(args.request, model=args.model))
 
-        if args.show_plan:
-            print(f"  [Plan] Would delegate to appropriate subsystem.\n")
+        print(f"  Category: {result['category']}")
+        if args.show_plan and result["plan"]:
+            print(f"  Plan:")
+            for step in result["plan"]:
+                print(f"    • {step}")
 
-        # Invoke the orchestrator (stub — real agent call goes here).
-        print_report(
-            title="Orchestrator Response",
-            sections=[
-                ("Request", args.request),
-                ("Category", category),
-                ("Status", "Orchestrator built.  Agent SDK integration pending."),
-            ],
-        )
+        if "synthesis" in result and result["synthesis"]:
+            print(f"\n  {result['synthesis']}")
+
+        # Print delegation summaries.
+        for subsystem, output in result.get("delegations", {}).items():
+            if hasattr(output, "result"):
+                status = output.result if isinstance(output.result, str) else "done"
+            else:
+                status = "done"
+            print(f"  └─ {subsystem}: {status}")
+
     else:
         # Interactive REPL.
-        interactive_repl(model=args.model, show_plan=args.show_plan)
+        asyncio.run(interactive_repl(model=args.model, show_plan=args.show_plan))
 
 
 if __name__ == "__main__":
