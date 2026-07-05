@@ -15,7 +15,7 @@ from apps.cli.chat import interactive_repl
 from apps.cli.display import print_header, print_report
 from src.agent.orchestration_helpers import classify_request
 from src.agent.runtime import run_request
-from src.config.settings import OPENROUTER_API_KEY
+from src.config.settings import LLM_API_KEY
 
 
 def main() -> None:
@@ -30,7 +30,7 @@ def main() -> None:
     parser.add_argument(
         "--model",
         default=None,
-        help="LLM model override (default: qwen/qwq-32b:free)",
+        help="LLM model override (default: deepseek-v4-flash-free)",
     )
     parser.add_argument(
         "--show-plan",
@@ -40,9 +40,9 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    if not OPENROUTER_API_KEY:
+    if not LLM_API_KEY:
         print(
-            "  ⚠️  OPENROUTER_API_KEY not set.  Set it in .env or as an env var.",
+            "  ⚠️  OPENCODE_API_KEY not set.  Set it in .env or as an env var.",
             file=sys.stderr,
         )
         sys.exit(1)

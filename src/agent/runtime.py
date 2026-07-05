@@ -1,4 +1,4 @@
-"""Agent runtime — orchestrator loop using OpenAI Agents SDK + OpenRouter.
+"""Agent runtime — orchestrator loop using OpenAI Agents SDK + Opencode.
 
 Provides:
 - ``create_orchestrator()`` — builds the top-level agent with subagent handoffs.
@@ -21,28 +21,28 @@ from src.agent.prompts import ORCHESTRATOR_SYSTEM
 from src.artifacts import CodeReport, ExperimentReport, ResearchReport, WikiUpdatePlan
 from src.config import settings
 
-# ── Wire OpenRouter as the OpenAI provider ────────────────────────────
+# ── Wire Opencode as the OpenAI provider ──────────────────────────────
 
-_openrouter_client: OpenAI | None = None
+_llm_client: OpenAI | None = None
 
 
 def _get_client() -> OpenAI:
-    global _openrouter_client
-    if _openrouter_client is not None:
-        return _openrouter_client
-    api_key = settings.OPENROUTER_API_KEY or os.getenv("OPENROUTER_API_KEY")
+    global _llm_client
+    if _llm_client is not None:
+        return _llm_client
+    api_key = settings.LLM_API_KEY or os.getenv("OPENCODE_API_KEY")
     if not api_key:
         print(
-            "  ⚠️  OPENROUTER_API_KEY not set.  Set in .env or environment.",
+            "  ⚠️  OPENCODE_API_KEY not set.  Set in .env or environment.",
             file=sys.stderr,
         )
         api_key = "sk-placeholder"
-    _openrouter_client = OpenAI(
-        base_url=settings.OPENROUTER_BASE_URL,
+    _llm_client = OpenAI(
+        base_url=settings.LLM_BASE_URL,
         api_key=api_key,
     )
-    set_default_openai_client(_openrouter_client)
-    return _openrouter_client
+    set_default_openai_client(_llm_client)
+    return _llm_client
 
 
 # ── Subagent tools ────────────────────────────────────────────────────

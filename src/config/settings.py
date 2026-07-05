@@ -34,16 +34,17 @@ MOTORCAD_MOT_DIR: Path | None = (
 REFERENCE_MOT: Path = PROJECT_ROOT / "SynRM_45kW_IE5.mot"
 REFERENCE_OPTIMIZER: Path = PROJECT_ROOT / "optimize_synrm_v4.py"
 
-# ── LLM / OpenRouter ──────────────────────────────────────────────────
-OPENROUTER_API_KEY: str | None = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+# ── LLM / Opencode ────────────────────────────────────────────────────
+LLM_API_KEY: str | None = os.getenv("OPENCODE_API_KEY")
+LLM_BASE_URL: str = "https://opencode.ai/zen/v1"
+LLM_MODEL: str = "deepseek-v4-flash-free"
 
-# Model per subsystem (matching the old project's convention)
-MODEL_DEFAULT: str = "qwen/qwq-32b:free"
-MODEL_RESEARCH: str = "qwen/qwq-32b:free"
-MODEL_SYNTHESIS: str = "nousresearch/hermes-3-llama-3.1-405b:free"
-MODEL_CALCULATE: str = "google/gemini-2.0-flash-exp:free"
-MODEL_DESIGN: str = "qwen/qwq-32b:free"
+# Model per subsystem
+MODEL_DEFAULT: str = LLM_MODEL
+MODEL_RESEARCH: str = LLM_MODEL
+MODEL_SYNTHESIS: str = LLM_MODEL
+MODEL_CALCULATE: str = LLM_MODEL
+MODEL_DESIGN: str = LLM_MODEL
 
 # ── Agent configuration ───────────────────────────────────────────────
 AgentMode = Literal["auto", "manual", "approval"]
@@ -77,3 +78,37 @@ BACKEND_ROUTES: dict[str, str] = {
     "/workspace/": str(PROJECT_ROOT / "workspace"),
     "/repo/": str(PROJECT_ROOT),
 }
+
+
+# ── LLM client factory ────────────────────────────────────────────────
+
+
+def get_llm_client() -> OpenAI:
+    """Return an OpenAI-compatible client pointed at Opencode."""
+    from openai import OpenAI
+
+    api_key = LLM_API_KEY or os.getenv("OPENCODE_API_KEY") or "sk-placeholder"
+    return OpenAI(base_url=LLM_BASE_URL, api_key=api_key)
+
+
+__all__ = [
+    "PROJECT_ROOT",
+    "WORKSPACE_ROOT",
+    "WIKI_ROOT",
+    "EXPERIMENTS_ROOT",
+    "RESEARCH_CACHE",
+    "SCRATCH_ROOT",
+    "LEGACY_WIKI_ROOT",
+    "MOTORCAD_MOT_DIR",
+    "REFERENCE_MOT",
+    "REFERENCE_OPTIMIZER",
+    "LLM_API_KEY",
+    "LLM_BASE_URL",
+    "LLM_MODEL",
+    "MODEL_DEFAULT",
+    "MODEL_RESEARCH",
+    "MODEL_SYNTHESIS",
+    "MODEL_CALCULATE",
+    "MODEL_DESIGN",
+    "get_llm_client",
+]

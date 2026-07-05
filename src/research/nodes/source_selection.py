@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from langchain_core.messages import SystemMessage
-from openai import OpenAI
 
 from src.config import settings
 from src.research.prompts.research_prompts import SOURCE_SELECTION
@@ -19,10 +18,7 @@ def source_selection(state: ResearchState) -> dict:
             "messages": [SystemMessage(content="No sources found to select.")],
         }
 
-    client = OpenAI(
-        base_url=settings.OPENROUTER_BASE_URL,
-        api_key=settings.OPENROUTER_API_KEY or "",
-    )
+    client = settings.get_llm_client()
 
     sources_text = "\n".join(
         f"- {s['title']} ({s['type']}): {s.get('path_or_url', '')}"

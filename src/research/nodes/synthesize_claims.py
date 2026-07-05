@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from langchain_core.messages import SystemMessage
-from openai import OpenAI
 
 from src.config import settings
 from src.research.prompts.research_prompts import SYNTHESIZE_CLAIMS
@@ -26,10 +25,7 @@ def synthesize_claims(state: ResearchState) -> dict:
     claims_text = "\n".join(f"- {c}" for c in claims)
     eq_text = "\n".join(f"- {e}" for e in equations)
 
-    client = OpenAI(
-        base_url=settings.OPENROUTER_BASE_URL,
-        api_key=settings.OPENROUTER_API_KEY or "",
-    )
+    client = settings.get_llm_client()
 
     response = client.chat.completions.create(
         model=settings.MODEL_SYNTHESIS,

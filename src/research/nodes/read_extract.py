@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from langchain_core.messages import SystemMessage
-from openai import OpenAI
 
 from src.config import settings
 from src.research.prompts.research_prompts import READ_EXTRACT
@@ -44,10 +43,7 @@ def read_extract(state: ResearchState) -> dict:
 
     source_text = "\n\n".join(full_texts)
 
-    client = OpenAI(
-        base_url=settings.OPENROUTER_BASE_URL,
-        api_key=settings.OPENROUTER_API_KEY or "",
-    )
+    client = settings.get_llm_client()
 
     response = client.chat.completions.create(
         model=settings.MODEL_RESEARCH,

@@ -11,12 +11,7 @@ from src.config import settings
 
 def normalize_question(state: ResearchState) -> dict:
     """Clarify the question and identify domain terms using an LLM call."""
-    from openai import OpenAI
-
-    client = OpenAI(
-        base_url=settings.OPENROUTER_BASE_URL,
-        api_key=settings.OPENROUTER_API_KEY or "",
-    )
+    client = settings.get_llm_client()
 
     response = client.chat.completions.create(
         model=settings.MODEL_RESEARCH,
