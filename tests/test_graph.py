@@ -77,3 +77,15 @@ def test_graph_has_nodes():
     assert "execute_research" in nodes
     assert "execute_experiment" in nodes
     assert "synthesize" in nodes
+
+
+def test_run_request_graph_import():
+    """run_request_graph can be imported."""
+    from src.agent.runtime import run_request_graph
+    assert callable(run_request_graph)
+
+
+def test_original_run_request_still_works():
+    """Original run_request() API is preserved."""
+    from src.agent.runtime import run_request
+    assert callable(run_request)

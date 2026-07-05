@@ -403,3 +403,55 @@ class InteractiveSession:
             return "No requests processed."
         cats = ", ".join(set(h["category"] for h in self.history))
         return f"{len(self.history)} requests [{cats}]"
+
+
+# ── LangGraph integration ────────────────────────────────────────────
+
+
+async def run_request_graph(
+    request: str,
+    thread_id: str = "default",
+) -> dict[str, Any]:
+    """Process a request through the LangGraph state machine.
+
+    Parameters
+    ----------
+    request : str
+        The user's natural-language request.
+    thread_id : str
+        Thread ID for checkpointer persistence.
+
+    Returns
+    -------
+    dict
+        Final state with messages, category, delegations.
+    """
+    from src.agent.graph import motor_graph
+
+    config = {"configurable": {"thread_id": thread_id}}
+
+    # Invoke graph
+    result = await motor_graph.ainvoke(
+        {"messages": [{"role": "user", "content": request}]},
+        config=config,
+    )
+
+    return {
+        "request": request,
+        "category": result.get("category", ""),
+        "delegations": result.get("delegations", {}),
+        "synthesis": _extract_synthesis(result),
+        "messages": result.get("messages", []),
+    }
+
+
+def _extract_synthesis(result: dict) -> str:
+    """Extract synthesis text from graph result."""
+    messages = result.get("messages", [])
+    for msg in reversed(messages):
+        if isinstance(msg, dict) and msg.get("role") == "assistant":
+            return msg.get("content", "")
+        if hasattr(msg, "content") and hasattr(msg, "type"):
+            if msg.type == "ai":
+                return msg.content
+    return ""
