@@ -1,18 +1,44 @@
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "synrm-agent"
-version = "1.0.0"
-description = "SynRM Multi-Agent Pipeline — LangGraph state machine for Motor-CAD automation"
+name = "motor-deepagent"
+version = "0.1.0"
+description = "Terminal-first engineering assistant — repo/wiki/research/motor-design"
+readme = "README.md"
 requires-python = ">=3.13"
+
+license = { text = "MIT" }
+
 dependencies = [
-    "langgraph>=0.4.0",
-    "langgraph-cli>=0.4.0",
-    "chromadb>=0.6.0",
-    "sentence-transformers>=3.0.0",
-    "openai>=1.50.0",
-    "langchain-core>=0.3.0",
-    "numpy>=2.0.0",
-    "pydantic>=2.0.0",
+    "pydantic>=2.0",
+    "python-dotenv>=1.0",
 ]
 
-[tool.langgraph]
-export_format = "langgraph_api_json"
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+]
+
+# Phase 2 dependencies (install when research subgraph is activated)
+research = [
+    "langgraph>=0.4.0",
+    "langchain-core>=0.3.0",
+    "chromadb>=0.6.0",
+    "sentence-transformers>=3.0.0",
+]
+
+# Phase 4 dependencies (install when motor-domain tools are activated)
+motorcad = [
+    "ansys.motorcad.core",
+    "numpy>=2.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["src*", "apps*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

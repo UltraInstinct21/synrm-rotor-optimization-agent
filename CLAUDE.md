@@ -1,7 +1,7 @@
-# CLAUDE.md — SynRM Multi-Agent Pipeline Project
+# CLAUDE.md — motor-deepagent
 
 **Project Root:** `D:\SRM\Agent\`
-**Updated:** 2026-06-06
+**Updated:** 2026-07-05
 
 ---
 
@@ -18,99 +18,109 @@
 - **Simplicity First:** Write the minimum code required to solve the problem. Do not add speculative abstractions or error handling for impossible scenarios.
 - **Match Existing Style:** Always adopt the codebase's existing conventions, even if they differ from Claude's defaults.
 - **Surgical Changes:** Modify only what is required. Never refactor code that is not broken, and do not "improve" adjacent code unless requested.
-- **Provide Verification Criteria:** Claude performs best when given test cases or exact target outputs.
 
 ### 3. Session Management
 
 - **Manage Context Aggressively:** If a session goes wrong, do not try to fix the same mistake three times. Run `/compact` to clear the whiteboard, or start a fresh session.
 - **Use Checkpoints:** Git commit frequently — after every working change. Use commits as rewinding checkpoints.
 - **Pre-approve Actions:** Define which tools Claude can use. Risky operations (deleting files, running destructive commands) require confirmation.
-- **Create Reusable Skills:** Document recurring workflows so Claude knows exactly how to handle specific tasks (like code reviews) every time.
-- **Define Your Tech Stack:** Explicitly list dependencies, file structures, and ignored patterns (see Part 3).
+- **Create Reusable Skills:** Document recurring workflows so Claude knows exactly how to handle specific tasks every time.
 
 ---
 
-## PART 2: PROJECT — SYNRM MULTI-AGENT PIPELINE
+## PART 2: PROJECT — MOTOR-DEEPAGENT
 
 ### Goal
 
-Build a multi-agent LangGraph pipeline that:
-1. **Researches** SynRM motor design theory (web + user resources)
-2. **Synthesizes** knowledge into an Obsidian-style wiki
-3. **Calculates** motor parameters from ratings (power, speed, torque)
-4. **Designs & Optimizes** .mot files via PyMotorCAD FEA
+Build a **terminal-first engineering assistant** that starts as a repo/wiki/research coding agent and grows into a motor-design assistant with PyMotorCAD / experiment / optimization workflows.
 
 ### Architecture
 
-LangGraph state machine with 4 phases — each phase is a graph node with typed state (`AgentState`). Shared knowledge layer via ChromaDB (vectors) + Obsidian `wiki/` (markdown files).
+```
+User → DeepAgent Orchestrator
+         ├── Repo Coding Subagent
+         ├── Wiki Manager
+         ├── LangGraph Research Subgraph  (Phase 2)
+         └── Experiment / Execution Layer  (Phase 3-4)
+```
 
-```
-User → Research → Synthesis → Calculate → Design & Optimize → .mot file
-                                                      │
-                                                      ▼
-                                              PyMotorCAD FEA
-```
+**Principle:** DeepAgent for orchestration + built-in coding-agent capabilities. LangGraph only for structured multi-step workflows where explicit graph structure helps.
 
 ### Key Files
 
 | File | Purpose |
 |------|---------|
-| `run_pipeline.py` | Entry point — runs full pipeline |
-| `agent/graph.py` | LangGraph StateGraph + phase routing |
-| `agent/state.py` | `AgentState` TypedDict |
-| `agent/models.py` | LLM client config (OpenRouter, free models) |
-| `agent/nodes/research.py` | Phase 1: source ingest → entity extraction |
-| `agent/nodes/synthesis.py` | Phase 2: gap/conflict/insight |
-| `agent/nodes/calculate.py` | Phase 3: sizing, winding, magnetic params |
-| `agent/nodes/design.py` | Phase 4: .mot explorer + variable discovery |
-| `agent/nodes/optimization.py` | Phase 4 sub-node: LHS/Pareto/PA sweep |
-| `agent/tools/chroma.py` | ChromaDB client + collection manager |
-| `agent/tools/wiki.py` | Obsidian .md reader/writer |
-| `agent/tools/embedder.py` | sentence-transformers wrapper |
-| `agent/tools/chunker.py` | Text chunking with overlap |
-| `agent/tools/pymotorcad.py` | PyMotorCAD subprocess launcher |
-| `agent/tools/retry.py` | Retry + timeout decorators |
-| `optimize_synrm_v4.py` | Existing PyMotorCAD optimization script (reference) |
-| `SynRM_45kW_IE5.mot` | Working model file |
-| `AGENTS.md` | Project spec — specs, constraints, strategy |
+| `apps/cli/main.py` | CLI entry point (single-shot + REPL) |
+| `src/agent/build_agent.py` | Orchestrator builder |
+| `src/agent/prompts.py` | System prompts for all subsystems |
+| `src/agent/subagents.py` | Subagent configurations |
+| `src/agent/approvals.py` | Permission boundaries |
+| `src/agent/orchestration_helpers.py` | Task classification, artifact handoff |
+| `src/artifacts/` | Pydantic data contracts (ResearchReport, CodeReport, etc.) |
+| `src/config/settings.py` | Project-wide paths and model config |
+| `src/tools/wiki/update_wiki.py` | Wiki Manager |
+| `src/tools/execution/run_script.py` | Script execution |
+| `src/skills/` | Skill definitions |
+| `workspace/wiki/` | Durable project knowledge base |
+| `SynRM_45kW_IE5.mot` | Reference motor model |
+| `optimize_synrm_v4.py` | Existing optimization script (reference) |
+| `AGENTS.md` | Motor specs, constraints, strategy |
 
-### LLM Wiki Knowledge Base
+### Data Contracts
 
-The project uses an Obsidian-style wiki at `D:\SRM\Motor _CAD\ScriptFiles\wiki\` as its persistent knowledge layer. See `D:\SRM\Motor _CAD\ScriptFiles\CLAUDE.md` Part 1 for the full wiki schema (INGEST, QUERY, LINT workflows, YAML frontmatter, wikilink conventions).
+Subsystems exchange structured artifacts, not free-form text:
 
-**Wiki structure:**
+| Artifact | Producer | Consumer |
+|----------|----------|----------|
+| `ResearchReport` | Research Subgraph | Orchestrator → Wiki Manager |
+| `CodeReport` | Repo Coding Subagent | Orchestrator → Wiki Manager |
+| `ExperimentReport` | Experiment Runner | Orchestrator → Wiki Manager |
+| `WikiUpdatePlan` | Orchestrator | Wiki Manager |
+
+### Project Wiki (workspace/wiki/)
+
+Persistent knowledge base for engineering knowledge:
+
 ```
-wiki/
-├── index.md           # master index — all pages listed
-├── log.md             # append-only activity log
-├── entities/          # motor types, materials, researchers, companies
-├── concepts/          # design principles, equations, tradeoffs
-├── sources/           # ingested papers, design guides, web content
-├── synthesis/         # cross-cutting analyses, calculations, logs
-└── queries/           # answered questions
+workspace/wiki/
+├── index.md               # master index with [[wikilinks]]
+├── project_overview.md
+├── codebase_map.md
+├── known_issues.md
+├── active_tasks.md
+├── architecture/
+│   └── orchestrator.md
+├── motorcad/
+│   ├── workflow.md
+│   ├── parameters.md
+│   ├── result_fields.md
+│   └── experiments/
+└── papers/
 ```
+
+Legacy reference wiki (Obsidian): `D:\SRM\Motor _CAD\ScriptFiles\wiki\`
 
 ### LLM Model Selection
 
 All LLM calls use **free open-source models** via OpenRouter:
 
-| Node | Model | Notes |
-|------|-------|-------|
-| Default | `qwen/qwq-32b:free` | Strong reasoning, free tier |
-| Research | `qwen/qwq-32b:free` | Fast research summaries |
-| Synthesis | `nousresearch/hermes-3-llama-3.1-405b:free` | Deep cross-referencing |
-| Calculate | `google/gemini-2.0-flash-exp:free` | Numerical precision |
-| Design | `qwen/qwq-32b:free` | High-stakes geometry decisions |
+| Role | Model |
+|------|-------|
+| Default | `qwen/qwq-32b:free` |
+| Research | `qwen/qwq-32b:free` |
+| Synthesis | `nousresearch/hermes-3-llama-3.1-405b:free` |
+| Calculate | `google/gemini-2.0-flash-exp:free` |
+| Design | `qwen/qwq-32b:free` |
 
 ### PyMotorCAD Anti-Hallucination Rules
 
-From `AGENTS.md` — followed by all design/optimization code:
+From `AGENTS.md` — followed when motor-domain tools are active:
 
-1. **Discover before first use** — `mc.get_variable_names()` before any `set/get`
-2. **Use safe_get / safe_set wrappers** — never raw calls
-3. **show_magnetic_context() before EMag**
-4. **Save before changing rotor params** — `best_so_far.mot` checkpoint
-5. **Read all results before changing any parameter**
+1. `mc.get_variable_names()` before any `set`/`get`
+2. Use `safe_get`/`safe_set` wrappers — never raw calls
+3. `show_magnetic_context()` before electromagnetic analysis
+4. Save before changing rotor params (`best_so_far.mot`)
+5. Read all results before changing any parameter
 
 ---
 
@@ -121,66 +131,49 @@ From `AGENTS.md` — followed by all design/optimization code:
 - Windows 11
 
 ### Core Dependencies
-| Package | Purpose | License |
-|---------|---------|---------|
-| `langgraph>=0.4.0` | State machine orchestration | MIT |
-| `chromadb>=0.6.0` | Vector store for RAG | Apache 2.0 |
-| `sentence-transformers>=3.0.0` | Text embeddings | Apache 2.0 |
-| `openai>=1.50.0` | OpenRouter API client | MIT |
-| `langchain-core>=0.3.0` | LangGraph message types | MIT |
-| `numpy>=2.0.0` | Numerical ops | BSD |
-| `pydantic>=2.0.0` | Structured output schemas | MIT |
-| `ansys.motorcad.core` | PyMotorCAD (proprietary) | Ansys EULA |
+| Package | Purpose |
+|---------|---------|
+| `pydantic>=2.0` | Data contracts / structured output |
+| `python-dotenv>=1.0` | Environment loading |
+
+### Phase 2 Dependencies
+| Package | Purpose |
+|---------|---------|
+| `langgraph>=0.4.0` | Research subgraph orchestration |
+| `chromadb>=0.6.0` | Vector store for RAG |
+| `sentence-transformers>=3.0.0` | Text embeddings |
+| `openai>=1.50.0` | OpenRouter API client |
+| `langchain-core>=0.3.0` | LangGraph message types |
+
+### Phase 4 Dependencies
+| Package | Purpose |
+|---------|---------|
+| `ansys.motorcad.core` | PyMotorCAD (proprietary, Ansys EULA) |
+| `numpy>=2.0` | Numerical ops |
 
 ### External Services
 - **OpenRouter** — Free-tier LLM access (`qwen/qwq-32b`, `gemini-2.0-flash-exp`, etc.)
 - **Ansys Motor-CAD 2025.1.1** — FEA solver (local, licensed)
-- **Obsidian** — Knowledge graph visualization (optional, local)
 
 ### File Patterns
 - `.mot` — Motor-CAD model files (binary INI-like, 15k+ lines)
-- `.csv` — Optimization result logs
 - `.md` — Wiki pages with YAML frontmatter + `[[wikilinks]]`
-- `.py` — Agent nodes, tools, pipeline scripts
-
-### Git Ignore
-```
-.chroma/
-__pycache__/
-*.pyc
-.env
-optimization_results*.csv
-best_so_far*.mot
-*.bak
-```
+- `.py` — Agent code, tools, CLI
 
 ---
 
-### Error Handling
-
-Each phase has 3-layer protection:
-1. **Node-level try/except** — catches failures, sets `phase_status[phase]=failed`
-2. **`safe_node_wrapper`** in `graph.py` — catches node crashes, logs traceback
-3. **`@retry` decorator** on ChromaDB ops — 2 attempts with exponential backoff
-
-**Graceful degradation:**
-- No API key → Research/Synthesis fail → router skips to Calculate
-- No Motor-CAD → Design parses .mot without PyMotorCAD
-- LLM timeout → falls through with empty results
-- FEA timeout → optimization returns error for that candidate
-
-### Quick Start
+## Quick Start
 
 ```bash
 set OPENROUTER_API_KEY=sk-or-v1-...
-python run_pipeline.py
+python -m apps.cli.main "inspect the repo module structure"
+python -m apps.cli.main          # interactive REPL
 ```
 
 ## Links
 
-- README: `README.md`
-- Design spec: `docs/superpowers/specs/2026-06-06-synrm-multi-agent-design.md`
-- Implementation plan: `docs/superpowers/plans/2026-06-06-synrm-multi-agent-implementation.md`
-- Existing wiki: `D:\SRM\Motor _CAD\ScriptFiles\CLAUDE.md` (wiki schema, Part 1)
-- Optimization reference: `D:\SRM\Agent\AGENTS.md` (motor specs, constraints)
-- Existing optimization: `D:\SRM\Agent\optimize_synrm_v4.py`
+- Architecture spec: `AGENTS.md` (motor specs, constraints)
+- Reference motor model: `SynRM_45kW_IE5.mot`
+- Existing optimizer: `optimize_synrm_v4.py`
+- Project wiki: `workspace/wiki/`
+- Legacy wiki: `D:\SRM\Motor _CAD\ScriptFiles\wiki\`

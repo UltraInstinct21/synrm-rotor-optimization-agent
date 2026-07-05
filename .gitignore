@@ -1,10 +1,31 @@
-.chroma/
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+
+# Environment
 .env
-optimization_results*.csv
-best_so_far*.mot
-*.bak
+
+# Agent internals
 .claude/
-.langgraph_api/
+.agents/
+.worktrees/
+
+# Motor-CAD
+*.bak
 *_backup_*.mot
+backup*.mot
+best_so_far*.mot
+optimization_results*.csv
+
+# Experiments
+workspace/experiments/*.log
+workspace/scratch/
+
+# Research cache
+workspace/research_cache/
+
+# IDE
+.vscode/
+.idea/

@@ -1,8 +1,0 @@
-{
-  "python_version": "3.13",
-  "dependencies": ["."],
-  "graphs": {
-    "synrm_pipeline": "./agent/graph.py:build_graph"
-  },
-  "env": ".env"
-}

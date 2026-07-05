@@ -1,7 +1,0 @@
-langgraph
-chromadb
-sentence-transformers
-openai
-numpy
-pydantic
-langchain-core
