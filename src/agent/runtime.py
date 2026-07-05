@@ -455,3 +455,42 @@ def _extract_synthesis(result: dict) -> str:
             if msg.type == "ai":
                 return msg.content
     return ""
+
+
+async def run_request_graph_streamed(
+    request: str,
+    thread_id: str = "default",
+) -> AsyncIterator[dict[str, Any]]:
+    """Like :func:`run_request_graph` but yields streaming events.
+
+    Yields dicts with ``type`` (``"category"`` | ``"info"`` | ``"synthesis"``)
+    and ``data`` / ``label`` for progressive UI updates.
+    """
+    from src.agent.graph import motor_graph
+
+    config = {"configurable": {"thread_id": thread_id}}
+
+    async for event in motor_graph.astream(
+        {"messages": [{"role": "user", "content": request}]},
+        config=config,
+        stream_mode="updates",
+    ):
+        for node_name, update in event.items():
+            if node_name == "classify" and "category" in update:
+                yield {"type": "category", "data": update["category"]}
+
+            elif node_name.startswith("execute_") and "delegations" in update:
+                delegations = update["delegations"]
+                for agent_name, output in delegations.items():
+                    summary = _format_output_summary(agent_name, output)
+                    yield {"type": "info", "label": agent_name, "data": summary}
+
+            elif node_name == "synthesize" and "messages" in update:
+                for msg in update["messages"]:
+                    content = ""
+                    if isinstance(msg, dict):
+                        content = msg.get("content", "")
+                    elif hasattr(msg, "content"):
+                        content = msg.content
+                    if content:
+                        yield {"type": "synthesis", "data": content}
