@@ -19,9 +19,19 @@ backup*.mot
 best_so_far*.mot
 optimization_results*.csv
 
+# Session (conversation DB)
+.session/
+
 # Experiments
 workspace/experiments/*.log
+workspace/experiments/*.csv
 workspace/scratch/
+
+# Memory store
+workspace/memory/
+
+# Debug dumps
+resp_dump.json
 
 # Research cache
 workspace/research_cache/
