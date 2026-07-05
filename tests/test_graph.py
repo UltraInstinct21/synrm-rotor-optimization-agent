@@ -46,3 +46,11 @@ def test_route_node():
 
     state = {"category": "question"}
     assert route_node(state) == "synthesize"
+
+
+def test_checkpointer_setup():
+    """Checkpointer can be created."""
+    from src.agent.checkpoint import get_checkpointer
+
+    checkpointer = get_checkpointer()
+    assert checkpointer is not None
