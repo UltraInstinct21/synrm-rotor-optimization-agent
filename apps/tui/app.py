@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import asyncio
 import sys
-import time
 from pathlib import Path
 from typing import Any
 
@@ -19,7 +18,6 @@ from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, Container
-from textual.reactive import reactive
 from textual.widgets import (
     Header,
     Footer,
@@ -43,7 +41,7 @@ from rich.columns import Columns
 from rich import box
 
 from src.config import settings
-from src.agent.runtime import run_request_streamed, InteractiveSession
+from src.agent.runtime import run_request_graph, InteractiveSession
 from src.agent.orchestration_helpers import classify_request
 from src.agent.approvals import requires_approval, PermissionLevel
 from src.agent.build_agent import build_orchestrator
@@ -163,12 +161,6 @@ Screen {
 RichLog {
     background: #000000;
     color: #e5e7eb;
-    padding: 0 1;
-}
-
-#streaming-output {
-    background: #000000;
-    color: #67e8f9;
     padding: 0 1;
 }
 
@@ -337,8 +329,6 @@ Button:hover {
                 yield Static(self._connection_info(), id="status-connection")
                 # Output area
                 yield RichLog(id="output-area", highlight=True, markup=True, max_lines=5000)
-                # Streaming response (hidden by default, shown during LLM streaming)
-                yield Static("", id="streaming-output", classes="hidden")
                 # Input
                 with Horizontal(id="input-container"):
                     yield Static(" >> ", id="prompt-label")
@@ -570,62 +560,22 @@ Button:hover {
 
     @work(thread=False)
     async def _handle_chat(self, cmd: str) -> None:
-        """Process via run_request_streamed() — live token streaming."""
-        streaming = self.query_one("#streaming-output", Static)
-        buffer = ""
-        flush_delay = 0.05  # seconds between UI flushes
-        last_flush = time.monotonic()
-
-        def _flush():
-            nonlocal buffer, last_flush
-            if not buffer:
-                return
-            streaming.update(Text(f"  {buffer}", INFO_STYLE))
-            streaming.remove_class("hidden")
-            last_flush = time.monotonic()
-
-        def _finalize(text: str):
-            if text:
-                self._log_response(text)
-            streaming.update("")
-            streaming.add_class("hidden")
-
+        """Process via run_request_graph() — LangGraph state machine."""
         try:
-            async for event in run_request_streamed(
-                cmd, model=self.model, session=self.session.memory
-            ):
-                etype = event.get("type")
+            self._log_result("category", "...")
+            result = await run_request_graph(cmd)
 
-                if etype == "token":
-                    buffer += event["data"]
-                    now = time.monotonic()
-                    if now - last_flush > flush_delay or "\n" in buffer:
-                        _flush()
+            self.query_one("#output-area", RichLog).clear()
+            self._log_init()
+            self._log_result("category", result.get("category", "?"))
 
-                elif etype == "error":
-                    _finalize("")
-                    self._log_error(f"LLM error: {event['data']}")
-
-                elif etype == "info":
-                    _flush()
-                    label = event.get("label", "")
-                    data = event.get("data", "")
-                    if label == "plan":
-                        self._log(f"    └─ plan: {data}", INFO_STYLE)
-                    else:
-                        self._log(f"    └─ {label}: {data}", INFO_STYLE)
-
-                elif etype == "category":
-                    self._log_result("category", event["data"])
-
-                elif etype == "synthesis":
-                    _finalize(event["data"])
-
-            if buffer:
-                _finalize(buffer)
+            synthesis = result.get("synthesis", "")
+            if synthesis:
+                self._log_response(synthesis)
+            else:
+                self._log("  No synthesis produced.", WARN_STYLE)
 
         except Exception as e:
-            _finalize(buffer)
             self._log_error(f"Chat error: {e}")
         finally:
             self._busy = False
