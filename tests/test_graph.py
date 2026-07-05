@@ -54,3 +54,26 @@ def test_checkpointer_setup():
 
     checkpointer = get_checkpointer()
     assert checkpointer is not None
+
+
+def test_graph_builds():
+    """Graph can be built and compiled."""
+    from src.agent.graph import build_graph
+
+    graph = build_graph()
+    assert graph is not None
+
+
+def test_graph_has_nodes():
+    """Graph has all required nodes."""
+    from src.agent.graph import build_graph
+
+    graph = build_graph()
+    nodes = list(graph.nodes.keys())
+    assert "classify" in nodes
+    assert "route" in nodes
+    assert "execute_code" in nodes
+    assert "execute_wiki" in nodes
+    assert "execute_research" in nodes
+    assert "execute_experiment" in nodes
+    assert "synthesize" in nodes
