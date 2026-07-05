@@ -10,15 +10,23 @@ from __future__ import annotations
 import argparse
 import asyncio
 import sys
+from pathlib import Path
+
+from dotenv import load_dotenv
 
 from apps.cli.chat import interactive_repl
 from apps.cli.display import print_header, print_report
 from src.agent.orchestration_helpers import classify_request
 from src.agent.runtime import run_request
+from src.config import settings
 from src.config.settings import LLM_API_KEY
 
 
 def main() -> None:
+    # Load .env from project root
+    env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+    load_dotenv(env_path, override=False)
+
     parser = argparse.ArgumentParser(
         description="motor-deepagent — terminal-first engineering assistant",
     )
@@ -30,7 +38,7 @@ def main() -> None:
     parser.add_argument(
         "--model",
         default=None,
-        help="LLM model override (default: deepseek-v4-flash-free)",
+        help=f"LLM model override (default: {settings.MODEL_DEFAULT})",
     )
     parser.add_argument(
         "--show-plan",

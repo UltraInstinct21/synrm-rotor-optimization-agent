@@ -2,7 +2,7 @@
 
 Usage:
     python -m apps.tui.app
-    python -m apps.tui.app --model deepseek-v4-flash-free
+    python -m apps.tui.app --model <model-from-env>
 """
 
 from __future__ import annotations
@@ -12,6 +12,8 @@ import sys
 import time
 from pathlib import Path
 from typing import Any
+
+from dotenv import load_dotenv
 
 from textual import work
 from textual.app import App, ComposeResult
@@ -41,7 +43,7 @@ from rich.columns import Columns
 from rich import box
 
 from src.config import settings
-from src.agent.runtime import run_request, InteractiveSession
+from src.agent.runtime import run_request_streamed, InteractiveSession
 from src.agent.orchestration_helpers import classify_request
 from src.agent.approvals import requires_approval, PermissionLevel
 from src.agent.build_agent import build_orchestrator
@@ -60,16 +62,15 @@ from src.artifacts import (
 from src.research.graph import run_research
 
 # ── Styles ──────────────────────────────────────────────────────────
-
-TITLE_STYLE = "bold white on #1a1a2e"
-HEADER_STYLE = "bold cyan"
-SUCCESS_STYLE = "bold green"
-WARN_STYLE = "bold yellow"
-ERROR_STYLE = "bold red"
-INFO_STYLE = "bold blue"
-DIM_STYLE = "dim white"
-SECTION_STYLE = "bold magenta"
-CODE_STYLE = "bold #e0e0e0"
+TITLE_STYLE   = "bold #f8fafc on #050505"
+HEADER_STYLE  = "bold #67e8f9"
+SUCCESS_STYLE = "bold #4ade80"
+WARN_STYLE    = "bold #fbbf24"
+ERROR_STYLE   = "bold #fb7185"
+INFO_STYLE    = "bold #60a5fa"
+DIM_STYLE     = "dim #7a7f8f"
+SECTION_STYLE = "bold #a78bfa"
+CODE_STYLE    = "bold #e5e7eb"
 
 # ── TUI App ─────────────────────────────────────────────────────────
 
@@ -81,208 +82,223 @@ class MotorDeepAgentTUI(App):
     """
 
     CSS = """
-    Screen {
-        background: #0d0d1a;
-    }
+Screen {
+    background: #000000;
+}
 
-    #sidebar {
-        width: 22;
-        dock: left;
-        background: #1a1a2e;
-        border-right: solid #2a2a4e;
-        padding: 0;
-    }
+#sidebar {
+    width: 22;
+    dock: left;
+    background: #050505;
+    border-right: solid #1f1f1f;
+    padding: 0;
+}
 
-    #sidebar-title {
-        padding: 1 1;
-        text-align: center;
-        background: #16213e;
-        color: #e94560;
-        text-style: bold;
-    }
+#sidebar-title {
+    padding: 1 1;
+    text-align: center;
+    background: #0b0b0b;
+    color: #fb7185;
+    text-style: bold;
+}
 
-    #sidebar-tabs {
-        height: auto;
-        margin: 0;
-    }
+#sidebar-tabs {
+    height: auto;
+    margin: 0;
+}
 
-    #sidebar-buttons {
-        width: 100%;
-        height: auto;
-    }
+#sidebar-buttons {
+    width: 100%;
+    height: auto;
+}
 
-    #sidebar-buttons Button {
-        width: 100%;
-        height: 3;
-        background: #1a1a2e;
-        color: #a0a0c0;
-        border: none;
-        text-align: left;
-        padding: 0 1;
-    }
+#sidebar-buttons Button {
+    width: 100%;
+    height: 3;
+    background: #050505;
+    color: #9ca3af;
+    border: none;
+    text-align: left;
+    padding: 0 1;
+}
 
-    #sidebar-buttons Button:hover {
-        background: #16213e;
-        color: #e94560;
-    }
+#sidebar-buttons Button:hover {
+    background: #111111;
+    color: #f3f4f6;
+}
 
-    #sidebar-buttons Button.variant-primary {
-        background: #0f3460;
-        color: #ffffff;
-        text-style: bold;
-    }
+#sidebar-buttons Button.-primary,
+#sidebar-buttons Button.variant-primary {
+    background: #111111;
+    color: #67e8f9;
+    text-style: bold;
+    border-left: thick #fb7185;
+}
 
-    #main-content {
-        width: 1fr;
-        height: 1fr;
-    }
+#main-content {
+    width: 1fr;
+    height: 1fr;
+}
 
-    #status-connection {
-        width: 100%;
-        height: auto;
-        padding: 0 1;
-        background: #16213e;
-        color: #a0a0c0;
-    }
+#status-connection {
+    width: 100%;
+    height: auto;
+    padding: 0 1;
+    background: #0b0b0b;
+    color: #9ca3af;
+    border-bottom: solid #1a1a1a;
+}
 
-    #output-area {
-        width: 100%;
-        height: 1fr;
-        background: #0d0d1a;
-        border-bottom: solid #2a2a4e;
-    }
+#output-area {
+    width: 100%;
+    height: 1fr;
+    background: #000000;
+    border-bottom: solid #1a1a1a;
+}
 
-    #output-area:focus-within {
-        border-bottom: solid #e94560;
-    }
+#output-area:focus-within {
+    border-bottom: solid #fb7185;
+}
 
-    RichLog {
-        background: #0d0d1a;
-        color: #e0e0e0;
-        padding: 0 1;
-    }
+RichLog {
+    background: #000000;
+    color: #e5e7eb;
+    padding: 0 1;
+}
 
-    #input-container {
-        width: 100%;
-        height: 3;
-        background: #1a1a2e;
-        border-top: solid #2a2a4e;
-        padding: 0 1;
-    }
+#streaming-output {
+    background: #000000;
+    color: #67e8f9;
+    padding: 0 1;
+}
 
-    #prompt-label {
-        width: 4;
-        height: 3;
-        content-align: left middle;
-        color: #e94560;
-        text-style: bold;
-    }
+.hidden {
+    display: none;
+}
 
-    #cmd-input {
-        width: 1fr;
-        height: 3;
-        background: #1a1a2e;
-        color: #e0e0e0;
-        border: none;
-    }
+#input-container {
+    width: 100%;
+    height: 3;
+    background: #050505;
+    border-top: solid #1a1a1a;
+    padding: 0 1;
+}
 
-    #cmd-input:focus {
-        background: #16213e;
-    }
+#prompt-label {
+    width: 4;
+    height: 3;
+    content-align: left middle;
+    color: #fb7185;
+    text-style: bold;
+}
 
-    #cmd-input .input-cursor {
-        color: #e94560;
-    }
+#cmd-input {
+    width: 1fr;
+    height: 3;
+    background: #050505;
+    color: #e5e7eb;
+    border: none;
+}
 
-    #cmd-input .input-placeholder {
-        color: #555577;
-    }
+#cmd-input:focus {
+    background: #0b0b0b;
+}
 
-    #status-bar {
-        width: 100%;
-        height: 1;
-        background: #16213e;
-        color: #555577;
-        padding: 0 1;
-    }
+#cmd-input .input-cursor {
+    color: #67e8f9;
+}
 
-    #status-text {
-        width: 1fr;
-        height: 1;
-        color: #555577;
-    }
+#cmd-input .input-placeholder {
+    color: #6b7280;
+}
 
-    #stats-text {
-        width: auto;
-        height: 1;
-        color: #555577;
-    }
+#status-bar {
+    width: 100%;
+    height: 1;
+    background: #0b0b0b;
+    color: #6b7280;
+    padding: 0 1;
+    border-top: solid #1a1a1a;
+}
 
-    #model-text {
-        width: auto;
-        height: 1;
-        color: #555577;
-    }
+#status-text {
+    width: 1fr;
+    height: 1;
+    color: #9ca3af;
+}
 
-    DataTable {
-        background: #0d0d1a;
-        color: #e0e0e0;
-        border: none;
-    }
+#stats-text {
+    width: auto;
+    height: 1;
+    color: #6b7280;
+}
 
-    DataTable > .datatable--header {
-        background: #16213e;
-        color: #a0a0c0;
-        text-style: bold;
-    }
+#model-text {
+    width: auto;
+    height: 1;
+    color: #6b7280;
+}
 
-    DataTable > .datatable--cursor {
-        background: #0f3460;
-    }
+DataTable {
+    background: #000000;
+    color: #e5e7eb;
+    border: none;
+}
 
-    ListView {
-        background: #0d0d1a;
-        border: none;
-    }
+DataTable > .datatable--header {
+    background: #0b0b0b;
+    color: #67e8f9;
+    text-style: bold;
+}
 
-    ListItem {
-        background: #0d0d1a;
-        color: #e0e0e0;
-        padding: 0 1;
-    }
+DataTable > .datatable--cursor {
+    background: #111111;
+    color: #ffffff;
+}
 
-    ListItem:hover {
-        background: #16213e;
-        color: #ffffff;
-    }
+ListView {
+    background: #000000;
+    border: none;
+}
 
-    Button {
-        background: #0f3460;
-        color: #ffffff;
-        border: none;
-        padding: 0 2;
-        margin: 0 1;
-    }
+ListItem {
+    background: #000000;
+    color: #e5e7eb;
+    padding: 0 1;
+}
 
-    Button:hover {
-        background: #e94560;
-    }
+ListItem:hover {
+    background: #111111;
+    color: #ffffff;
+}
 
-    #detail-panel {
-        width: 100%;
-        height: 1fr;
-        background: #0d0d1a;
-        border-top: solid #2a2a4e;
-    }
+Button {
+    background: #111111;
+    color: #e5e7eb;
+    border: none;
+    padding: 0 2;
+    margin: 0 1;
+}
 
-    #detail-panel RichLog {
-        height: 100%;
-    }
+Button:hover {
+    background: #1a1a1a;
+    color: #67e8f9;
+}
+
+#detail-panel {
+    width: 100%;
+    height: 1fr;
+    background: #000000;
+    border-top: solid #1a1a1a;
+}
+
+#detail-panel RichLog {
+    height: 100%;
+}
     """
-
     # ── Bindings ──────────────────────────────────────────────────
     BINDINGS = [
-        Binding("ctrl+c", "quit", "Quit"),
+        Binding("ctrl+q", "quit", "Quit"),
         Binding("ctrl+l", "clear_output", "Clear"),
         Binding("ctrl+w", "focus_input", "Input"),
         Binding("f1", "tab_chat", "Chat", priority=True),
@@ -321,6 +337,8 @@ class MotorDeepAgentTUI(App):
                 yield Static(self._connection_info(), id="status-connection")
                 # Output area
                 yield RichLog(id="output-area", highlight=True, markup=True, max_lines=5000)
+                # Streaming response (hidden by default, shown during LLM streaming)
+                yield Static("", id="streaming-output", classes="hidden")
                 # Input
                 with Horizontal(id="input-container"):
                     yield Static(" >> ", id="prompt-label")
@@ -552,41 +570,62 @@ class MotorDeepAgentTUI(App):
 
     @work(thread=False)
     async def _handle_chat(self, cmd: str) -> None:
-        """Process via the orchestrator's run_request()."""
+        """Process via run_request_streamed() — live token streaming."""
+        streaming = self.query_one("#streaming-output", Static)
+        buffer = ""
+        flush_delay = 0.05  # seconds between UI flushes
+        last_flush = time.monotonic()
+
+        def _flush():
+            nonlocal buffer, last_flush
+            if not buffer:
+                return
+            streaming.update(Text(f"  {buffer}", INFO_STYLE))
+            streaming.remove_class("hidden")
+            last_flush = time.monotonic()
+
+        def _finalize(text: str):
+            if text:
+                self._log_response(text)
+            streaming.update("")
+            streaming.add_class("hidden")
+
         try:
-            result = await run_request(cmd, model=self.model)
-            category = result.get("category", "unknown")
-            self._log_result("category", category)
-            self._log_result("plan", " | ".join(result.get("plan", [])))
+            async for event in run_request_streamed(
+                cmd, model=self.model, session=self.session.memory
+            ):
+                etype = event.get("type")
 
-            for subsystem, output in result.get("delegations", {}).items():
-                if isinstance(output, CodeReport):
-                    self._log_result(
-                        subsystem,
-                        f"{output.files_changed or 0} files changed, "
-                        f"{output.files_inspected or 0} inspected, "
-                        f"result: {output.result}",
-                    )
-                elif isinstance(output, ResearchReport):
-                    self._log_result(
-                        subsystem,
-                        f"confidence={output.confidence}, "
-                        f"summary: {output.summary[:120]}...",
-                    )
-                elif isinstance(output, ExperimentReport):
-                    self._log_result(
-                        subsystem,
-                        f"id={output.experiment_id}, result={output.result}",
-                    )
-                else:
-                    self._log_result(subsystem, "completed")
+                if etype == "token":
+                    buffer += event["data"]
+                    now = time.monotonic()
+                    if now - last_flush > flush_delay or "\n" in buffer:
+                        _flush()
 
-            synth = result.get("synthesis", "")
-            if synth:
-                self._log_response(synth)
+                elif etype == "error":
+                    _finalize("")
+                    self._log_error(f"LLM error: {event['data']}")
 
-            self.session.history.append(result)
+                elif etype == "info":
+                    _flush()
+                    label = event.get("label", "")
+                    data = event.get("data", "")
+                    if label == "plan":
+                        self._log(f"    └─ plan: {data}", INFO_STYLE)
+                    else:
+                        self._log(f"    └─ {label}: {data}", INFO_STYLE)
+
+                elif etype == "category":
+                    self._log_result("category", event["data"])
+
+                elif etype == "synthesis":
+                    _finalize(event["data"])
+
+            if buffer:
+                _finalize(buffer)
+
         except Exception as e:
+            _finalize(buffer)
             self._log_error(f"Chat error: {e}")
         finally:
             self._busy = False
@@ -993,8 +1032,16 @@ class MotorDeepAgentTUI(App):
 # ── Entry point ────────────────────────────────────────────────────
 
 
+def load_env() -> None:
+    """Load .env from project root."""
+    env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+    load_dotenv(env_path, override=False)
+
+
 def main() -> None:
     """Launch the TUI."""
+    load_env()
+
     import argparse
 
     parser = argparse.ArgumentParser(description="motor-deepagent TUI")

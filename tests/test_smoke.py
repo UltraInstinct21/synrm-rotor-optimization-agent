@@ -137,8 +137,9 @@ def test_optimization():
 def test_tui_import():
     """Verify TUI module imports and initializes correctly."""
     from apps.tui import MotorDeepAgentTUI
+    from src.config import settings
 
     app = MotorDeepAgentTUI()
-    assert app.model == "deepseek-v4-flash-free"
+    assert app.model == settings.MODEL_DEFAULT
     assert app.active_tab == "chat"
     assert len(app.BINDINGS) == 9  # 4 generic + 5 tab bindings

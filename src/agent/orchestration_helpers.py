@@ -99,19 +99,3 @@ def classify_request(request: str) -> TaskCategory:
     return "question"
 
 
-# ── Artifact handoff ──────────────────────────────────────────────────
-
-
-def research_to_wiki_candidates(report: ResearchReport) -> list[str]:
-    """Extract wiki update suggestions from a ResearchReport."""
-    return report.recommended_wiki_updates
-
-
-def code_to_wiki_candidates(report: CodeReport) -> list[str]:
-    """Extract wiki update suggestions from a CodeReport."""
-    return report.wiki_update_candidates
-
-
-def experiment_to_wiki_candidates(report: ExperimentReport) -> list[str]:
-    """Extract wiki logging suggestions from an ExperimentReport."""
-    return report.notes_for_wiki

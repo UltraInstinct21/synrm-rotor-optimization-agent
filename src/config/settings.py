@@ -16,6 +16,9 @@ EXPERIMENTS_ROOT: Path = WORKSPACE_ROOT / "experiments"
 RESEARCH_CACHE: Path = WORKSPACE_ROOT / "research_cache"
 SCRATCH_ROOT: Path = WORKSPACE_ROOT / "scratch"
 
+# ── Memory ────────────────────────────────────────────────────────────
+MEMORY_PATH: Path = WORKSPACE_ROOT / "memory" / "store.json"
+
 # Legacy wiki (external reference wiki used before this project existed)
 LEGACY_WIKI_ROOT: Path | None = (
     Path(r"D:\SRM\Motor _CAD\ScriptFiles\wiki")
@@ -36,41 +39,18 @@ REFERENCE_OPTIMIZER: Path = PROJECT_ROOT / "optimize_synrm_v4.py"
 
 # ── LLM / Opencode ────────────────────────────────────────────────────
 LLM_API_KEY: str | None = os.getenv("OPENCODE_API_KEY")
-LLM_BASE_URL: str = "https://opencode.ai/zen/v1"
-LLM_MODEL: str = "deepseek-v4-flash-free"
+LLM_BASE_URL: str = os.getenv("LLM_BASE_URL", "https://opencode.ai/zen/v1")
+LLM_MODEL: str = os.getenv("LLM_MODEL", "deepseek-v4-flash-free")
 
-# Model per subsystem
-MODEL_DEFAULT: str = LLM_MODEL
-MODEL_RESEARCH: str = LLM_MODEL
-MODEL_SYNTHESIS: str = LLM_MODEL
-MODEL_CALCULATE: str = LLM_MODEL
-MODEL_DESIGN: str = LLM_MODEL
+# Model per subsystem — each individually configurable via env
+MODEL_DEFAULT: str = os.getenv("MODEL_DEFAULT", LLM_MODEL)
+MODEL_RESEARCH: str = os.getenv("MODEL_RESEARCH", LLM_MODEL)
+MODEL_SYNTHESIS: str = os.getenv("MODEL_SYNTHESIS", LLM_MODEL)
+MODEL_CALCULATE: str = os.getenv("MODEL_CALCULATE", LLM_MODEL)
+MODEL_DESIGN: str = os.getenv("MODEL_DESIGN", LLM_MODEL)
 
 # ── Agent configuration ───────────────────────────────────────────────
 AgentMode = Literal["auto", "manual", "approval"]
-
-ORCHESTRATOR_INSTRUCTIONS: str = """\
-You are the **motor-deepagent** orchestrator — a terminal-first engineering assistant.
-
-Your job is to:
-1. Understand the user's request.
-2. Classify the task (repo/coding, wiki, research, experiment, or mixed).
-3. Build a high-level plan.
-4. Delegate to the appropriate subsystem (RepoCodingAgent, WikiManager, ResearchSubgraph, ExecutionLayer).
-5. Synthesize a final response for the user.
-
-You have access to:
-- Repo Coding Subagent for code inspection and edits.
-- Wiki Manager for durable project knowledge.
-- Research Subgraph for structured multi-source research.
-- Experiment Runner for executing scripts and collecting results.
-
-**Rules:**
-- Always inspect before editing.
-- Keep changes minimal and preserve existing style.
-- Surface uncertainty rather than guessing.
-- Return structured artifact summaries in your responses.
-"""
 
 # ── Filesystem backend (for DeepAgent SDK CompositeBackend) ───────────
 # These map virtual paths to real filesystem locations.
@@ -98,6 +78,7 @@ __all__ = [
     "EXPERIMENTS_ROOT",
     "RESEARCH_CACHE",
     "SCRATCH_ROOT",
+    "MEMORY_PATH",
     "LEGACY_WIKI_ROOT",
     "MOTORCAD_MOT_DIR",
     "REFERENCE_MOT",
@@ -111,4 +92,6 @@ __all__ = [
     "MODEL_CALCULATE",
     "MODEL_DESIGN",
     "get_llm_client",
+    "AgentMode",
+    "BACKEND_ROUTES",
 ]

@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, AsyncIterator
 
 from openai import OpenAI, AsyncOpenAI
 from agents import (
@@ -27,8 +27,15 @@ from agents.memory import SQLiteSession, Session
 from src.agent.build_agent import build_coding_subagent, build_wiki_manager
 from src.agent.orchestration_helpers import classify_request
 from src.agent.prompts import ORCHESTRATOR_SYSTEM
+from src.agent.subagents import (
+    SubagentConfig,
+    REPO_CODING_AGENT,
+    WIKI_MANAGER_AGENT,
+    EXPERIMENT_RUNNER_AGENT,
+)
 from src.artifacts import CodeReport, ExperimentReport, ResearchReport, WikiUpdatePlan
 from src.config import settings
+from src.tools.filesys import read_file, write_file, grep_files, list_directory
 
 # ── Wire Opencode as the OpenAI provider ──────────────────────────────
 
@@ -78,6 +85,106 @@ def get_model_provider() -> MultiProvider:
     return _multi_provider
 
 
+# ── Streaming variant ─────────────────────────────────────────────────
+
+
+async def run_request_streamed(
+    request: str,
+    model: str | None = None,
+    session: Session | None = None,
+) -> AsyncIterator[dict[str, Any]]:
+    """Like :func:`run_request` but yields streaming token events for the "question" category.
+
+    Yields dicts with keys ``type`` (``"token"`` | ``"info"`` | ``"category"`` | ``"synthesis"``)
+    and ``data`` containing the payload.
+
+    - ``"token"`` — a text delta from the LLM (streaming).
+    - ``"info"`` — a label/value pair (category, plan step, delegation status).
+    - ``"category"`` — the final category string.
+    - ``"synthesis"`` — the final synthesis text (for non-question categories).
+    """
+    _get_client()
+    model = model or settings.MODEL_DEFAULT
+    category = classify_request(request)
+    yield {"type": "category", "data": category}
+
+    _DISPATCH: dict[str, tuple[str, SubagentConfig | None, type | None, bool]] = {
+        "repo_coding": ("RepoCodingAgent", REPO_CODING_AGENT, CodeReport, False),
+        "wiki_maintenance": ("WikiManager", WIKI_MANAGER_AGENT, None, False),
+        "experiment": ("ExperimentRunner", EXPERIMENT_RUNNER_AGENT, ExperimentReport, False),
+    }
+
+    if category in _DISPATCH:
+        name, cfg, out_type, _ = _DISPATCH[category]
+        yield {"type": "info", "label": "plan", "data": f"{name}: {request}"}
+        output = await _run_subagent(cfg, request, model, session, out_type)
+        yield {"type": "info", "label": name, "data": _format_output_summary(name, output)}
+        yield {"type": "synthesis", "data": _format_output_summary(name, output)}
+
+    elif category == "research":
+        yield {"type": "info", "label": "plan", "data": f"ResearchSubgraph: {request}"}
+        report = await _run_research(request)
+        yield {"type": "info", "label": "ResearchSubgraph", "data": report.summary[:200]}
+        yield {"type": "synthesis", "data": report.summary}
+
+    elif category == "mixed":
+        parts = _decompose_mixed(request)
+        for i, p in enumerate(parts):
+            yield {"type": "info", "label": "plan", "data": f"Step {i+1}: {p}"}
+            sub_cat = classify_request(p)
+            if sub_cat in _DISPATCH:
+                name, cfg, out_type, _ = _DISPATCH[sub_cat]
+                key = f"{name.lower().replace('agent', '').replace('manager', '')}:{p[:40]}"
+                output = await _run_subagent(cfg, p, model, session, out_type)
+                yield {"type": "info", "label": key, "data": _format_output_summary(name, output)}
+
+    else:
+        # Simple question — stream from the LLM directly.
+        run_config = RunConfig(
+            model_provider=get_model_provider(),
+            workflow_name="motor-deepagent",
+            group_id="motor-deepagent-session",
+        )
+        agent = Agent(
+            name="motor-deepagent",
+            instructions=ORCHESTRATOR_SYSTEM,
+            model=model,
+            tools=[read_file, write_file, grep_files, list_directory],
+        )
+        streaming_result = await Runner.run_streamed(
+            agent, request, run_config=run_config, session=session,
+        )
+        full_text = ""
+        async for event in streaming_result.stream_events():
+            # Handle various stream event types
+            if hasattr(event, "data") and hasattr(event.data, "type"):
+                etype = getattr(event.data, "type", "")
+                # Error event
+                if etype == "error":
+                    msg = getattr(event.data, "message", str(event.data))
+                    yield {"type": "error", "data": f"LLM stream error: {msg}"}
+                    break
+            # Text delta (token)
+            if hasattr(event, "data") and hasattr(event.data, "delta"):
+                yield {"type": "token", "data": event.data.delta}
+            # Text done (final)
+            if hasattr(event, "data") and hasattr(event.data, "text"):
+                full_text = event.data.text
+        if full_text:
+            yield {"type": "synthesis", "data": full_text}
+
+
+def _format_output_summary(name: str, output: Any) -> str:
+    """Return a one-line summary of a subagent's output."""
+    if isinstance(output, CodeReport):
+        return f"{output.files_changed or 0} files changed, result: {output.result}"
+    elif isinstance(output, ResearchReport):
+        return f"confidence={output.confidence}, {output.summary[:120]}"
+    elif isinstance(output, ExperimentReport):
+        return f"id={output.experiment_id}, result={output.result}"
+    return "completed"
+
+
 # ── SQLite conversation session ──────────────────────────────────────
 
 
@@ -99,30 +206,22 @@ def get_session(session_id: str = "default") -> Session | None:
 # ── Subagent tools ────────────────────────────────────────────────────
 
 
-async def _run_coding(request: str, model: str | None = None) -> CodeReport:
-    """Delegate to the Repo Coding Subagent."""
-    from src.agent.subagents import REPO_CODING_AGENT as cfg
-
+async def _run_subagent(
+    cfg: SubagentConfig,
+    request: str,
+    model: str | None = None,
+    session: Session | None = None,
+    output_type: type | None = None,
+) -> Any:
+    """Run a subagent from its config. Returns structured output if output_type given, else str."""
     agent = Agent(
         name=cfg.name,
         instructions=cfg.instructions,
         model=model or cfg.model or settings.MODEL_DEFAULT,
-        output_type=CodeReport,
+        tools=cfg.tools,
+        **({"output_type": output_type} if output_type else {}),
     )
-    result = await Runner.run(agent, request)
-    return result.final_output
-
-
-async def _run_wiki(request: str, model: str | None = None) -> str:
-    """Delegate to the Wiki Manager."""
-    from src.agent.subagents import WIKI_MANAGER_AGENT as cfg
-
-    agent = Agent(
-        name=cfg.name,
-        instructions=cfg.instructions,
-        model=model or cfg.model or settings.MODEL_DEFAULT,
-    )
-    result = await Runner.run(agent, request)
+    result = await Runner.run(agent, request, session=session)
     return result.final_output
 
 
@@ -131,28 +230,13 @@ async def _run_research(request: str) -> ResearchReport:
     try:
         from src.research.graph import run_research
 
-        report = await run_research(request)
-        return report
+        return await run_research(request)
     except ImportError:
         return ResearchReport(
             question=request,
             summary="Research subgraph not available yet. Install langgraph and configure research nodes.",
             confidence="low",
         )
-
-
-async def _run_experiment(request: str, model: str | None = None) -> ExperimentReport:
-    """Delegate to the Experiment Runner."""
-    from src.agent.subagents import EXPERIMENT_RUNNER_AGENT as cfg
-
-    agent = Agent(
-        name=cfg.name,
-        instructions=cfg.instructions,
-        model=model or cfg.model or settings.MODEL_DEFAULT,
-        output_type=ExperimentReport,
-    )
-    result = await Runner.run(agent, request)
-    return result.final_output
 
 
 # ── Orchestrator dispatch ─────────────────────────────────────────────
@@ -191,44 +275,41 @@ async def run_request(
         "synthesis": "",
     }
 
-    # Build RunConfig with model provider and optional session.
+    # Build RunConfig with model provider.
     run_config = RunConfig(
         model_provider=get_model_provider(),
-        session=session,
         workflow_name="motor-deepagent",
         group_id="motor-deepagent-session",
     )
 
     # ── Build plan ────────────────────────────────────────────────────
-    if category == "repo_coding":
-        result["plan"] = [f"RepoCodingAgent: {request}"]
-        result["delegations"]["RepoCodingAgent"] = await _run_coding(request, model)
+    _DISPATCH: dict[str, tuple[str, SubagentConfig | None, type | None, bool]] = {
+        # category → (display_name, config, output_type, is_async_fn)
+        "repo_coding": ("RepoCodingAgent", REPO_CODING_AGENT, CodeReport, False),
+        "wiki_maintenance": ("WikiManager", WIKI_MANAGER_AGENT, None, False),
+        "experiment": ("ExperimentRunner", EXPERIMENT_RUNNER_AGENT, ExperimentReport, False),
+    }
 
-    elif category == "wiki_maintenance":
-        result["plan"] = [f"WikiManager: {request}"]
-        result["delegations"]["WikiManager"] = await _run_wiki(request, model)
+    if category in _DISPATCH:
+        name, cfg, out_type, _ = _DISPATCH[category]
+        result["plan"] = [f"{name}: {request}"]
+        result["delegations"][name] = await _run_subagent(cfg, request, model, session, out_type)
 
     elif category == "research":
         result["plan"] = [f"ResearchSubgraph: {request}"]
         result["delegations"]["ResearchSubgraph"] = await _run_research(request)
-
-    elif category == "experiment":
-        result["plan"] = [f"ExperimentRunner: {request}"]
-        result["delegations"]["ExperimentRunner"] = await _run_experiment(request, model)
 
     elif category == "mixed":
         parts = _decompose_mixed(request)
         result["plan"] = [f"Step {i+1}: {p}" for i, p in enumerate(parts)]
         for step in parts:
             sub_cat = classify_request(step)
-            if sub_cat == "repo_coding":
-                result["delegations"][f"coding:{step[:40]}"] = await _run_coding(step, model)
-            elif sub_cat == "wiki_maintenance":
-                result["delegations"][f"wiki:{step[:40]}"] = await _run_wiki(step, model)
+            if sub_cat in _DISPATCH:
+                name, cfg, out_type, _ = _DISPATCH[sub_cat]
+                key = f"{name.lower().replace('agent', '').replace('manager', '')}:{step[:40]}"
+                result["delegations"][key] = await _run_subagent(cfg, step, model, session, out_type)
             elif sub_cat == "research":
                 result["delegations"][f"research:{step[:40]}"] = await _run_research(step)
-            elif sub_cat == "experiment":
-                result["delegations"][f"experiment:{step[:40]}"] = await _run_experiment(step, model)
 
     else:
         # Simple question — route to the orchestrator LLM directly.
@@ -236,8 +317,9 @@ async def run_request(
             name="motor-deepagent",
             instructions=ORCHESTRATOR_SYSTEM,
             model=model,
+            tools=[read_file, write_file, grep_files, list_directory],
         )
-        response = await Runner.run(agent, request, run_config=run_config)
+        response = await Runner.run(agent, request, run_config=run_config, session=session)
         result["synthesis"] = response.final_output
 
     # ── Synthesize final response ─────────────────────────────────────

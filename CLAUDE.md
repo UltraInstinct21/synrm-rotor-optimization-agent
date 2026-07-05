@@ -102,15 +102,15 @@ Legacy reference wiki (Obsidian): `D:\SRM\Motor _CAD\ScriptFiles\wiki\`
 
 ### LLM Model Selection
 
-All LLM calls use **free open-source models** via OpenRouter:
+All LLM calls route through **Opencode** (`ai.opencode.ai/zen/v1`). Model per subsystem set via `.env`:
 
-| Role | Model |
-|------|-------|
-| Default | `qwen/qwq-32b:free` |
-| Research | `qwen/qwq-32b:free` |
-| Synthesis | `nousresearch/hermes-3-llama-3.1-405b:free` |
-| Calculate | `google/gemini-2.0-flash-exp:free` |
-| Design | `qwen/qwq-32b:free` |
+| Role | Env Var | Current |
+|------|---------|---------|
+| Default | `MODEL_DEFAULT` | `deepseek-v4-flash-free` |
+| Research | `MODEL_RESEARCH` | `deepseek-v4-flash-free` |
+| Synthesis | `MODEL_SYNTHESIS` | `deepseek-v4-flash-free` |
+| Calculate | `MODEL_CALCULATE` | `deepseek-v4-flash-free` |
+| Design | `MODEL_DESIGN` | `deepseek-v4-flash-free` |
 
 ### PyMotorCAD Anti-Hallucination Rules
 
