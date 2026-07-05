@@ -1,4 +1,16 @@
-"""LangGraph state machine for motor-deepagent."""
+"""LangGraph state machine for motor-deepagent.
+
+Provides:
+- ``build_graph()`` — builds the StateGraph with all nodes and edges.
+- ``motor_graph`` — pre-compiled graph instance ready for invocation.
+- ``run_request_graph()`` in runtime.py — async wrapper for graph invocation.
+
+Graph Flow:
+    classify → (conditional) → execute_* → synthesize → END
+
+State:
+    MotorState with messages, category, delegations, pending_changes.
+"""
 
 from __future__ import annotations
 
