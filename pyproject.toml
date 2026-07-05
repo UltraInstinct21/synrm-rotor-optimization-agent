@@ -16,8 +16,8 @@ dependencies = [
     "python-dotenv>=1.0",
     "openai>=1.50",
     "openai-agents>=0.1",
-    "langgraph>=0.4.0",
-    "langchain-core>=0.3.0",
+    "langgraph>=0.4.0,<2.0.0",
+    "langchain-core>=0.3.0,<1.0.0",
     "textual>=2.0",
 ]
 

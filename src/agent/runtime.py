@@ -3,17 +3,26 @@
 Provides:
 - ``create_orchestrator()`` — builds the top-level agent with subagent handoffs.
 - ``run_request()`` — single user request → classification → delegation → synthesis.
-- ``InteractiveSession`` — REPL wrapper with conversation history.
+- ``InteractiveSession`` — REPL wrapper with optional SQLite conversation memory.
 """
 
 from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
 from typing import Any
 
-from openai import OpenAI
-from agents import Agent, Runner, handoff, set_default_openai_client
+from openai import OpenAI, AsyncOpenAI
+from agents import (
+    Agent,
+    MultiProvider,
+    Runner,
+    handoff,
+    RunConfig,
+    set_default_openai_client,
+)
+from agents.memory import SQLiteSession, Session
 
 from src.agent.build_agent import build_coding_subagent, build_wiki_manager
 from src.agent.orchestration_helpers import classify_request
@@ -24,9 +33,12 @@ from src.config import settings
 # ── Wire Opencode as the OpenAI provider ──────────────────────────────
 
 _llm_client: OpenAI | None = None
+_multi_provider: MultiProvider | None = None
+SESSION_DB_PATH: Path = settings.PROJECT_ROOT / ".session" / "conversations.db"
 
 
 def _get_client() -> OpenAI:
+    """Return (and cache) the Opencode-compatible OpenAI client."""
     global _llm_client
     if _llm_client is not None:
         return _llm_client
@@ -45,31 +57,70 @@ def _get_client() -> OpenAI:
     return _llm_client
 
 
+def get_model_provider() -> MultiProvider:
+    """Return a ``MultiProvider`` that routes all model calls through Opencode.
+
+    This lets us use model-parameter prefixes (``deepseek-v4-flash-free`` as a
+    bare name resolves via the default ``OpenAIProvider`` whose base URL points
+    at Opencode).
+    """
+    global _multi_provider
+    if _multi_provider is not None:
+        return _multi_provider
+    client = _get_client()
+    _multi_provider = MultiProvider(
+        openai_client=AsyncOpenAI(
+            base_url=settings.LLM_BASE_URL,
+            api_key=(settings.LLM_API_KEY or os.getenv("OPENCODE_API_KEY") or "sk-placeholder"),
+        ),
+        openai_use_responses=False,  # use ChatCompletions, not Responses
+    )
+    return _multi_provider
+
+
+# ── SQLite conversation session ──────────────────────────────────────
+
+
+def get_session(session_id: str = "default") -> Session | None:
+    """Return a SQLite-backed session for conversation persistence.
+
+    Returns ``None`` if ``aiosqlite`` is not installed (graceful fallback).
+    """
+    try:
+        SESSION_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        return SQLiteSession(
+            session_id=session_id,
+            db_path=str(SESSION_DB_PATH),
+        )
+    except Exception:
+        return None
+
+
 # ── Subagent tools ────────────────────────────────────────────────────
 
 
-async def _run_coding(request: str) -> CodeReport:
+async def _run_coding(request: str, model: str | None = None) -> CodeReport:
     """Delegate to the Repo Coding Subagent."""
     from src.agent.subagents import REPO_CODING_AGENT as cfg
 
     agent = Agent(
         name=cfg.name,
         instructions=cfg.instructions,
-        model=cfg.model or settings.MODEL_DEFAULT,
+        model=model or cfg.model or settings.MODEL_DEFAULT,
         output_type=CodeReport,
     )
     result = await Runner.run(agent, request)
     return result.final_output
 
 
-async def _run_wiki(request: str) -> str:
+async def _run_wiki(request: str, model: str | None = None) -> str:
     """Delegate to the Wiki Manager."""
     from src.agent.subagents import WIKI_MANAGER_AGENT as cfg
 
     agent = Agent(
         name=cfg.name,
         instructions=cfg.instructions,
-        model=cfg.model or settings.MODEL_DEFAULT,
+        model=model or cfg.model or settings.MODEL_DEFAULT,
     )
     result = await Runner.run(agent, request)
     return result.final_output
@@ -90,14 +141,14 @@ async def _run_research(request: str) -> ResearchReport:
         )
 
 
-async def _run_experiment(request: str) -> ExperimentReport:
+async def _run_experiment(request: str, model: str | None = None) -> ExperimentReport:
     """Delegate to the Experiment Runner."""
     from src.agent.subagents import EXPERIMENT_RUNNER_AGENT as cfg
 
     agent = Agent(
         name=cfg.name,
         instructions=cfg.instructions,
-        model=cfg.model or settings.MODEL_DEFAULT,
+        model=model or cfg.model or settings.MODEL_DEFAULT,
         output_type=ExperimentReport,
     )
     result = await Runner.run(agent, request)
@@ -107,10 +158,26 @@ async def _run_experiment(request: str) -> ExperimentReport:
 # ── Orchestrator dispatch ─────────────────────────────────────────────
 
 
-async def run_request(request: str, model: str | None = None) -> dict[str, Any]:
+async def run_request(
+    request: str,
+    model: str | None = None,
+    session: Session | None = None,
+) -> dict[str, Any]:
     """Process a single user request through the orchestrator.
 
-    Returns a dict with keys: request, category, plan, results, synthesis.
+    Parameters
+    ----------
+    request : str
+        The user's natural-language request.
+    model : str, optional
+        Model override.
+    session : Session, optional
+        Optional SQLite (or other) session for conversation memory.
+
+    Returns
+    -------
+    dict
+        Keys: ``request``, ``category``, ``plan``, ``delegations``, ``synthesis``.
     """
     _get_client()
     model = model or settings.MODEL_DEFAULT
@@ -124,14 +191,22 @@ async def run_request(request: str, model: str | None = None) -> dict[str, Any]:
         "synthesis": "",
     }
 
+    # Build RunConfig with model provider and optional session.
+    run_config = RunConfig(
+        model_provider=get_model_provider(),
+        session=session,
+        workflow_name="motor-deepagent",
+        group_id="motor-deepagent-session",
+    )
+
     # ── Build plan ────────────────────────────────────────────────────
     if category == "repo_coding":
         result["plan"] = [f"RepoCodingAgent: {request}"]
-        result["delegations"]["RepoCodingAgent"] = await _run_coding(request)
+        result["delegations"]["RepoCodingAgent"] = await _run_coding(request, model)
 
     elif category == "wiki_maintenance":
         result["plan"] = [f"WikiManager: {request}"]
-        result["delegations"]["WikiManager"] = await _run_wiki(request)
+        result["delegations"]["WikiManager"] = await _run_wiki(request, model)
 
     elif category == "research":
         result["plan"] = [f"ResearchSubgraph: {request}"]
@@ -139,22 +214,21 @@ async def run_request(request: str, model: str | None = None) -> dict[str, Any]:
 
     elif category == "experiment":
         result["plan"] = [f"ExperimentRunner: {request}"]
-        result["delegations"]["ExperimentRunner"] = await _run_experiment(request)
+        result["delegations"]["ExperimentRunner"] = await _run_experiment(request, model)
 
     elif category == "mixed":
-        # Mixed: use the orchestrator agent to plan and route.
         parts = _decompose_mixed(request)
         result["plan"] = [f"Step {i+1}: {p}" for i, p in enumerate(parts)]
         for step in parts:
             sub_cat = classify_request(step)
             if sub_cat == "repo_coding":
-                result["delegations"][f"coding:{step[:40]}"] = await _run_coding(step)
+                result["delegations"][f"coding:{step[:40]}"] = await _run_coding(step, model)
             elif sub_cat == "wiki_maintenance":
-                result["delegations"][f"wiki:{step[:40]}"] = await _run_wiki(step)
+                result["delegations"][f"wiki:{step[:40]}"] = await _run_wiki(step, model)
             elif sub_cat == "research":
                 result["delegations"][f"research:{step[:40]}"] = await _run_research(step)
             elif sub_cat == "experiment":
-                result["delegations"][f"experiment:{step[:40]}"] = await _run_experiment(step)
+                result["delegations"][f"experiment:{step[:40]}"] = await _run_experiment(step, model)
 
     else:
         # Simple question — route to the orchestrator LLM directly.
@@ -163,7 +237,7 @@ async def run_request(request: str, model: str | None = None) -> dict[str, Any]:
             instructions=ORCHESTRATOR_SYSTEM,
             model=model,
         )
-        response = await Runner.run(agent, request)
+        response = await Runner.run(agent, request, run_config=run_config)
         result["synthesis"] = response.final_output
 
     # ── Synthesize final response ─────────────────────────────────────
@@ -176,7 +250,6 @@ async def run_request(request: str, model: str | None = None) -> dict[str, Any]:
 def _decompose_mixed(request: str) -> list[str]:
     """Split a mixed request into sub-tasks."""
     lines = request.strip().split("\n")
-    # If the user gave a numbered or bullet list, treat each as a step.
     steps = []
     for line in lines:
         stripped = line.strip().lstrip("-*1234567890. ")
@@ -206,18 +279,40 @@ def _synthesize(result: dict[str, Any]) -> str:
     return "\n".join(parts)
 
 
-# ── Interactive session ───────────────────────────────────────────────
+# ── Interactive session with memory ───────────────────────────────────
 
 
 class InteractiveSession:
-    """REPL session with conversation tracking."""
+    """REPL session with optional SQLite conversation persistence.
 
-    def __init__(self, model: str | None = None) -> None:
+    Usage::
+
+        session = InteractiveSession()
+        result = await session.process("hello")
+        print(session.history)
+    """
+
+    def __init__(
+        self,
+        model: str | None = None,
+        use_memory: bool = True,
+    ) -> None:
         self.model = model or settings.MODEL_DEFAULT
         self.history: list[dict[str, Any]] = []
+        self._session: Session | None = get_session() if use_memory else None
+
+    @property
+    def memory(self) -> Session | None:
+        """The underlying SQLite session (or ``None`` if disabled)."""
+        return self._session
 
     async def process(self, request: str) -> dict[str, Any]:
-        result = await run_request(request, model=self.model)
+        """Process a request, tracking it in history and optional memory."""
+        result = await run_request(
+            request,
+            model=self.model,
+            session=self._session,
+        )
         self.history.append(result)
         return result
 

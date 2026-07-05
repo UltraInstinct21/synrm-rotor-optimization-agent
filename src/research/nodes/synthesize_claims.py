@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from langchain_core.messages import SystemMessage
-
+from src.agent.event_stream import AsyncEventStream
 from src.config import settings
 from src.research.prompts.research_prompts import SYNTHESIZE_CLAIMS
+from src.research.schemas import Synthesis
 from src.research.state import ResearchState
 
 
@@ -19,7 +19,7 @@ def synthesize_claims(state: ResearchState) -> dict:
         return {
             "synthesized_claims": [],
             "conflicts": [],
-            "messages": [SystemMessage(content="No claims to synthesize.")],
+            "messages": ["No claims to synthesize."],
         }
 
     claims_text = "\n".join(f"- {c}" for c in claims)
@@ -44,37 +44,25 @@ def synthesize_claims(state: ResearchState) -> dict:
             "type": "json_schema",
             "json_schema": {
                 "name": "synthesis",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "synthesized_claims": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                        },
-                        "conflicts": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                        },
-                    },
-                    "required": ["synthesized_claims", "conflicts"],
-                },
+                "schema": Synthesis.model_json_schema(),
             },
         },
     )
 
-    import json
+    parsed = Synthesis.model_validate_json(
+        response.choices[0].message.content or "{}"
+    )
 
-    parsed = json.loads(response.choices[0].message.content or "{}")
+    msg = (
+        f"Synthesized {len(parsed.synthesized_claims)} claims, "
+        f"{len(parsed.conflicts)} conflicts."
+    )
+    stream: AsyncEventStream | None = state.get("stream")
+    if stream:
+        stream.emit_sync(AsyncEventStream.text_chunk("research", msg, "synthesize"))
 
     return {
-        "synthesized_claims": parsed.get("synthesized_claims", claims),
-        "conflicts": parsed.get("conflicts", []),
-        "messages": [
-            SystemMessage(
-                content=(
-                    f"Synthesized {len(parsed.get('synthesized_claims', []))} claims, "
-                    f"{len(parsed.get('conflicts', []))} conflicts."
-                )
-            ),
-        ],
+        "synthesized_claims": parsed.synthesized_claims,
+        "conflicts": parsed.conflicts,
+        "messages": [msg],
     }

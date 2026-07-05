@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from langchain_core.messages import HumanMessage, SystemMessage
-
-from src.research.state import ResearchState
-from src.research.prompts.research_prompts import NORMALIZE_QUESTION
+from src.agent.event_stream import AsyncEventStream
 from src.config import settings
+from src.research.prompts.research_prompts import NORMALIZE_QUESTION
+from src.research.schemas import NormalizedQuestion
+from src.research.state import ResearchState
 
 
 def normalize_question(state: ResearchState) -> dict:
@@ -23,31 +23,23 @@ def normalize_question(state: ResearchState) -> dict:
             "type": "json_schema",
             "json_schema": {
                 "name": "normalized",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "normalized_question": {"type": "string"},
-                        "domain_terms": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                        },
-                    },
-                    "required": ["normalized_question", "domain_terms"],
-                },
+                "schema": NormalizedQuestion.model_json_schema(),
             },
         },
     )
 
-    import json
+    parsed = NormalizedQuestion.model_validate_json(
+        response.choices[0].message.content or "{}"
+    )
 
-    parsed = json.loads(response.choices[0].message.content or "{}")
+    stream: AsyncEventStream | None = state.get("stream")
+    if stream:
+        stream.emit_sync(AsyncEventStream.text_chunk(
+            "research", f"Normalized: {parsed.normalized_question}", "normalize"
+        ))
 
     return {
-        "normalized_question": parsed.get(
-            "normalized_question", state["question"]
-        ),
-        "domain_terms": parsed.get("domain_terms", []),
-        "messages": [
-            SystemMessage(content=f"Normalized: {parsed.get('normalized_question', '')}"),
-        ],
+        "normalized_question": parsed.normalized_question,
+        "domain_terms": parsed.domain_terms,
+        "messages": [f"Normalized: {parsed.normalized_question}"],
     }

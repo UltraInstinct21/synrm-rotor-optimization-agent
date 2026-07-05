@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from langchain_core.messages import SystemMessage
-
+from src.agent.event_stream import AsyncEventStream
 from src.config import settings
 from src.research.prompts.research_prompts import READ_EXTRACT
+from src.research.schemas import Extraction
 from src.research.state import ResearchState
 
 
@@ -19,7 +19,7 @@ def read_extract(state: ResearchState) -> dict:
             "extracted_claims": [],
             "extracted_equations": [],
             "extracted_notes": ["No sources selected for reading."],
-            "messages": [SystemMessage(content="No sources to read.")],
+            "messages": ["No sources to read."],
         }
 
     # Read full content of selected wiki sources.
@@ -35,7 +35,6 @@ def read_extract(state: ResearchState) -> dict:
             full_texts.append(f"=== {src['title']} ===\n(Could not read)")
 
     if not full_texts:
-        # Use the snippets collected earlier.
         for src in sources:
             snippet = src.get("content_snippet", "")
             if snippet:
@@ -61,42 +60,23 @@ def read_extract(state: ResearchState) -> dict:
             "type": "json_schema",
             "json_schema": {
                 "name": "extraction",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "extracted_claims": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                        },
-                        "extracted_equations": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                        },
-                        "extracted_notes": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                        },
-                    },
-                    "required": ["extracted_claims", "extracted_equations", "extracted_notes"],
-                },
+                "schema": Extraction.model_json_schema(),
             },
         },
     )
 
-    import json
+    parsed = Extraction.model_validate_json(
+        response.choices[0].message.content or "{}"
+    )
 
-    parsed = json.loads(response.choices[0].message.content or "{}")
+    msg = f"Extracted {len(parsed.extracted_claims)} claims, {len(parsed.extracted_equations)} equations."
+    stream: AsyncEventStream | None = state.get("stream")
+    if stream:
+        stream.emit_sync(AsyncEventStream.text_chunk("research", msg, "read_extract"))
 
     return {
-        "extracted_claims": parsed.get("extracted_claims", []),
-        "extracted_equations": parsed.get("extracted_equations", []),
-        "extracted_notes": parsed.get("extracted_notes", []),
-        "messages": [
-            SystemMessage(
-                content=(
-                    f"Extracted {len(parsed.get('extracted_claims', []))} claims, "
-                    f"{len(parsed.get('extracted_equations', []))} equations."
-                )
-            ),
-        ],
+        "extracted_claims": parsed.extracted_claims,
+        "extracted_equations": parsed.extracted_equations,
+        "extracted_notes": parsed.extracted_notes,
+        "messages": [msg],
     }

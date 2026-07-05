@@ -69,11 +69,12 @@ def test_research_state():
     assert state["report_confidence"] == "medium"
 
 
-def test_research_graph_build():
-    from src.research import build_research_graph
+def test_research_graph_imports():
+    from src.research import run_research, ResearchState, make_initial_state
 
-    graph = build_research_graph()
-    assert graph is not None
+    assert callable(run_research)
+    state = make_initial_state("test question")
+    assert state["question"] == "test question"
 
 
 def test_domain_models():

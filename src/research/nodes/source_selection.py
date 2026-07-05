@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from langchain_core.messages import SystemMessage
-
+from src.agent.event_stream import AsyncEventStream
 from src.config import settings
 from src.research.prompts.research_prompts import SOURCE_SELECTION
+from src.research.schemas import SourceSelection
 from src.research.state import ResearchState
 
 
@@ -15,7 +15,7 @@ def source_selection(state: ResearchState) -> dict:
     if not sources:
         return {
             "selected_sources": [],
-            "messages": [SystemMessage(content="No sources found to select.")],
+            "messages": ["No sources found to select."],
         }
 
     client = settings.get_llm_client()
@@ -41,37 +41,22 @@ def source_selection(state: ResearchState) -> dict:
             "type": "json_schema",
             "json_schema": {
                 "name": "selection",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "selected_sources": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "title": {"type": "string"},
-                                    "type": {"type": "string"},
-                                    "path_or_url": {"type": "string"},
-                                    "relevance": {"type": "string"},
-                                },
-                                "required": ["title", "type", "path_or_url"],
-                            },
-                        },
-                    },
-                    "required": ["selected_sources"],
-                },
+                "schema": SourceSelection.model_json_schema(),
             },
         },
     )
 
-    import json
+    parsed = SourceSelection.model_validate_json(
+        response.choices[0].message.content or "{}"
+    )
+    selected = [s.model_dump() for s in parsed.selected_sources] or sources[:3]
 
-    parsed = json.loads(response.choices[0].message.content or "{}")
-    selected = parsed.get("selected_sources", sources[:3])
+    msg = f"Selected {len(selected)} sources for deep reading."
+    stream: AsyncEventStream | None = state.get("stream")
+    if stream:
+        stream.emit_sync(AsyncEventStream.text_chunk("research", msg, "source_selection"))
 
     return {
         "selected_sources": selected,
-        "messages": [
-            SystemMessage(content=f"Selected {len(selected)} sources for deep reading.")
-        ],
+        "messages": [msg],
     }

@@ -1,10 +1,14 @@
-"""Research state — LangGraph TypedDict for the research subgraph."""
+"""Research state — TypedDict for the research subgraph.
+
+Messages are now plain strings (not LangChain ``SystemMessage``) and the
+``add_messages`` reducer has been removed since the pipeline is sequential.
+"""
 
 from __future__ import annotations
 
-from typing import Annotated, Any, TypedDict
+from typing import Any, TypedDict
 
-from langgraph.graph.message import add_messages
+from src.agent.event_stream import AsyncEventStream
 
 
 class ResearchState(TypedDict):
@@ -54,12 +58,17 @@ class ResearchState(TypedDict):
     report: dict[str, Any]
     """Final ResearchReport-compatible dict."""
 
-    # ── Messages ────────────────────────────────────────────────────
-    messages: Annotated[list, add_messages]
-    """LangGraph message list (for tracing)."""
+    # ── Messages (plain strings, no LangChain wrappers) ─────────────
+    messages: list[str]
+    """Human-readable status log — one entry per node."""
+
+    # ── Streaming (optional — set by ``run_research_stream``) ───────
+    stream: AsyncEventStream | None
+    """Event stream for real-time TUI progress.  ``None`` in single-shot mode."""
 
 
-def make_initial_state(question: str) -> ResearchState:
+def make_initial_state(question: str,
+                       stream: AsyncEventStream | None = None) -> ResearchState:
     """Return a fresh ResearchState with defaults."""
     return {
         "question": question,
@@ -78,4 +87,5 @@ def make_initial_state(question: str) -> ResearchState:
         "report_confidence": "medium",
         "report": {},
         "messages": [],
+        "stream": stream,
     }
