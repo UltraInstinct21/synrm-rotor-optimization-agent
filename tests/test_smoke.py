@@ -131,3 +131,13 @@ def test_optimization():
     report = run_sweep(config)
     assert report.result == "success"
     assert report.experiment_id.startswith("sweep_")
+
+
+def test_tui_import():
+    """Verify TUI module imports and initializes correctly."""
+    from apps.tui import MotorDeepAgentTUI
+
+    app = MotorDeepAgentTUI()
+    assert app.model == "deepseek-v4-flash-free"
+    assert app.active_tab == "chat"
+    assert len(app.BINDINGS) == 9  # 4 generic + 5 tab bindings
