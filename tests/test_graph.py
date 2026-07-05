@@ -71,7 +71,6 @@ def test_graph_has_nodes():
     graph = build_graph()
     nodes = list(graph.nodes.keys())
     assert "classify" in nodes
-    assert "route" in nodes
     assert "execute_code" in nodes
     assert "execute_wiki" in nodes
     assert "execute_research" in nodes
@@ -89,3 +88,18 @@ def test_original_run_request_still_works():
     """Original run_request() API is preserved."""
     from src.agent.runtime import run_request
     assert callable(run_request)
+
+
+def test_graph_invoke_question():
+    """Graph can invoke on a simple question."""
+    from src.agent.graph import motor_graph
+
+    config = {"configurable": {"thread_id": "test-question-1"}}
+    result = motor_graph.invoke(
+        {"messages": [{"role": "user", "content": "hello"}]},
+        config=config,
+    )
+    assert "category" in result
+    assert result["category"] == "question"
+    assert "messages" in result
+    assert len(result["messages"]) >= 1

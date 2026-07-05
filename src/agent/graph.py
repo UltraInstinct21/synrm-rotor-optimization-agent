@@ -26,20 +26,16 @@ def build_graph() -> StateGraph:
 
     # Add nodes
     builder.add_node("classify", classify_node)
-    builder.add_node("route", route_node)
     builder.add_node("execute_code", execute_code_node)
     builder.add_node("execute_wiki", execute_wiki_node)
     builder.add_node("execute_research", execute_research_node)
     builder.add_node("execute_experiment", execute_experiment_node)
     builder.add_node("synthesize", synthesize_node)
 
-    # Add edges
+    # Add edges — classify routes directly via conditional edges
     builder.add_edge(START, "classify")
-    builder.add_edge("classify", "route")
-
-    # Conditional routing from route node
     builder.add_conditional_edges(
-        "route",
+        "classify",
         route_node,
         {
             "execute_code": "execute_code",
