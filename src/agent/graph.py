@@ -29,10 +29,14 @@ from src.agent.nodes import (
 from src.agent.state import MotorState
 
 
-def build_graph() -> StateGraph:
+def build_graph(checkpointer=True) -> StateGraph:
     """Build the motor-deepagent LangGraph.
 
-    Returns compiled graph with checkpointer for state persistence.
+    Args:
+        checkpointer: True = use InMemorySaver (local CLI).
+                      None/False = no checkpointer (langgraph dev / Studio).
+
+    Returns compiled graph.
     """
     builder = StateGraph(MotorState)
 
@@ -65,10 +69,13 @@ def build_graph() -> StateGraph:
     builder.add_edge("execute_experiment", "synthesize")
     builder.add_edge("synthesize", END)
 
-    # Compile with checkpointer
-    checkpointer = get_checkpointer()
-    return builder.compile(checkpointer=checkpointer)
+    # Compile — Studio/API manages its own persistence
+    cp = get_checkpointer() if checkpointer else None
+    return builder.compile(checkpointer=cp)
 
 
-# Pre-compiled graph for import
-motor_graph = build_graph()
+# Compiled graph for Studio / langgraph dev (no custom checkpointer)
+motor_graph = build_graph(checkpointer=False)
+
+# Compiled graph for local CLI / REPL (with InMemorySaver)
+motor_graph_local = build_graph(checkpointer=True)

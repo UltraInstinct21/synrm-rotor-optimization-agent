@@ -1,0 +1,7 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "motor-deepagent": "./src/agent/graph.py:motor_graph"
+  },
+  "env": ".env"
+}
