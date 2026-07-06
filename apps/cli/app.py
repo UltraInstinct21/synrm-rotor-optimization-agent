@@ -34,11 +34,14 @@ class SlashCompleter(Completer):
 
 def main() -> None:
     """CLI entry point."""
-    # Load .env
+    # Load .env — must happen before settings reads env vars
     env_path = settings.PROJECT_ROOT / ".env"
     load_dotenv(env_path, override=False)
 
-    if not settings.LLM_API_KEY:
+    # Re-read API key after dotenv load (settings cached None at import time)
+    import os
+    api_key = os.getenv("OPENCODE_API_KEY")
+    if not api_key:
         print("  WARNING: OPENCODE_API_KEY not set. Set it in .env.", file=sys.stderr)
         sys.exit(1)
 
@@ -61,8 +64,19 @@ def main() -> None:
 
 async def _single_shot(ctx: CommandContext, request: str) -> None:
     """Process a single request and exit."""
-    from apps.cli.commands.chat import run as chat_run
-    await chat_run(ctx, request)
+    # Route slash commands to the registry
+    if request.startswith("/"):
+        parts = request.split(maxsplit=1)
+        cmd_name = parts[0]
+        args = parts[1] if len(parts) > 1 else ""
+        entry = ctx.registry.get(cmd_name)
+        if entry:
+            await entry.handler(ctx, args)
+        else:
+            ctx.renderer.print(f"[red]Unknown command:[/red] {cmd_name}")
+    else:
+        from apps.cli.commands.chat import run as chat_run
+        await chat_run(ctx, request)
 
 
 async def _repl(ctx: CommandContext) -> None:
