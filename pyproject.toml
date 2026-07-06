@@ -17,23 +17,24 @@ dependencies = [
     "openai>=1.50",
     "openai-agents>=0.1",
     "langgraph>=0.4.0,<2.0.0",
-    "langchain-core>=0.3.0,<1.0.0",
+    "langchain-core>=0.3.0",
     "textual>=2.0",
+    "rich>=13.0",
+    "prompt_toolkit>=3.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
-]
+    "langgraph-cli[inmem]>=0.1.0",
+ ]
 
-# Vector RAG — install when research knowledge base uses ChromaDB
 rag = [
     "chromadb>=0.6.0",
     "sentence-transformers>=3.0.0",
 ]
 
-# Motor-CAD — install when running FEA workflows
 motorcad = [
     "ansys.motorcad.core",
     "numpy>=2.0",
