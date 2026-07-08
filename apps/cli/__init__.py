@@ -1,1 +1,0 @@
-"""Unified CLI — motor-deepagent terminal engineering assistant."""

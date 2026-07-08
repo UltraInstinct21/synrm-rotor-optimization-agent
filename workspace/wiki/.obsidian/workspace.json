@@ -1,0 +1,193 @@
+{
+  "main": {
+    "id": "8332e31e549c461c",
+    "type": "split",
+    "children": [
+      {
+        "id": "b4e0aa0965d77683",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "6fc9fd7fdeb35430",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "motorcad/pymotorcad-general-api.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "pymotorcad-general-api"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "68d003cf2abb80fc",
+    "type": "split",
+    "children": [
+      {
+        "id": "d0cfbd36aba5ea77",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "77d39100e384d518",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "1f8ed754fe1e25c3",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "a8d37fad8ce2720f",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "2b74064329a632b7",
+    "type": "split",
+    "children": [
+      {
+        "id": "59c4b46e414b971f",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "4659727d31e447b5",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "motorcad/pymotorcad-adaptive-templates-guide.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for pymotorcad-adaptive-templates-guide"
+            }
+          },
+          {
+            "id": "db9c49d2b36b7cc4",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "motorcad/pymotorcad-adaptive-templates-guide.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from pymotorcad-adaptive-templates-guide"
+            }
+          },
+          {
+            "id": "9904b4a7abbbcf55",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "830ed9648209a7ae",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "e5dd264575fa865f",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "motorcad/pymotorcad-adaptive-templates-guide.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of pymotorcad-adaptive-templates-guide"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "6fc9fd7fdeb35430",
+  "lastOpenFiles": [
+    "motorcad/pymotorcad-curved-flux-barriers.md",
+    "power-factor-eq.md",
+    "motorcad/pymotorcad-adaptive-templates-guide.md",
+    "equations/torque-equation.md"
+  ]
+}
