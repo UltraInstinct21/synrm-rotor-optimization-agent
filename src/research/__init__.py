@@ -1,5 +1,5 @@
 """Research subgraph — LangGraph Functional API research pipeline."""
-from src.research.graph import run_research, run_research_stream
+from src.research.graph import run_research
 from src.research.state import ResearchState, make_initial_state
 from src.research.schemas import (
     NormalizedQuestion,
@@ -18,7 +18,6 @@ from src.research.schemas import (
 
 __all__ = [
     "run_research",
-    "run_research_stream",
     "ResearchState",
     "make_initial_state",
     # Pydantic models

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.agent.event_stream import AsyncEventStream
 from src.config import settings
 from src.research.prompts.research_prompts import READ_EXTRACT
 from src.research.schemas import Extraction
@@ -42,37 +41,23 @@ def read_extract(state: ResearchState) -> dict:
 
     source_text = "\n\n".join(full_texts)
 
-    client = settings.get_llm_client()
+    llm = settings.get_llm(settings.MODEL_RESEARCH)
 
-    response = client.chat.completions.create(
-        model=settings.MODEL_RESEARCH,
-        messages=[
-            {"role": "system", "content": READ_EXTRACT},
-            {
-                "role": "user",
-                "content": (
-                    f"Question: {state['normalized_question']}\n\n"
-                    f"Sources:\n{source_text[:12000]}"
-                ),
-            },
-        ],
-        response_format={
-            "type": "json_schema",
-            "json_schema": {
-                "name": "extraction",
-                "schema": Extraction.model_json_schema(),
-            },
-        },
-    )
+    from langchain_core.messages import SystemMessage, HumanMessage
 
-    parsed = Extraction.model_validate_json(
-        response.choices[0].message.content or "{}"
-    )
+    response = llm.invoke([
+        SystemMessage(content=READ_EXTRACT),
+        HumanMessage(
+            content=(
+                f"Question: {state['normalized_question']}\n\n"
+                f"Sources:\n{source_text[:12000]}"
+            )
+        ),
+    ])
+
+    parsed = Extraction.model_validate_json(response.content or "{}")
 
     msg = f"Extracted {len(parsed.extracted_claims)} claims, {len(parsed.extracted_equations)} equations."
-    stream: AsyncEventStream | None = state.get("stream")
-    if stream:
-        stream.emit_sync(AsyncEventStream.text_chunk("research", msg, "read_extract"))
 
     return {
         "extracted_claims": parsed.extracted_claims,

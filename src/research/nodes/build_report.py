@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from src.agent.event_stream import AsyncEventStream
 from src.config import settings
 from src.research.prompts.research_prompts import BUILD_REPORT
 from src.research.schemas import ReportOutput
@@ -43,35 +42,24 @@ def build_report(state: ResearchState) -> dict:
     conflicts_text = "\n".join(f"- {c}" for c in conflicts)
     eq_text = "\n".join(f"- {e}" for e in equations)
 
-    client = settings.get_llm_client()
+    llm = settings.get_llm(settings.MODEL_RESEARCH)
 
-    response = client.chat.completions.create(
-        model=settings.MODEL_RESEARCH,
-        messages=[
-            {"role": "system", "content": BUILD_REPORT},
-            {
-                "role": "user",
-                "content": (
-                    f"Question: {question}\n\n"
-                    f"Synthesized claims:\n{claims_text}\n\n"
-                    f"Conflicts:\n{conflicts_text}\n\n"
-                    f"Equations:\n{eq_text}\n\n"
-                    f"Sources: {len(sources)} selected."
-                ),
-            },
-        ],
-        response_format={
-            "type": "json_schema",
-            "json_schema": {
-                "name": "report",
-                "schema": ReportOutput.model_json_schema(),
-            },
-        },
-    )
+    from langchain_core.messages import SystemMessage, HumanMessage
 
-    parsed = ReportOutput.model_validate_json(
-        response.choices[0].message.content or "{}"
-    )
+    response = llm.invoke([
+        SystemMessage(content=BUILD_REPORT),
+        HumanMessage(
+            content=(
+                f"Question: {question}\n\n"
+                f"Synthesized claims:\n{claims_text}\n\n"
+                f"Conflicts:\n{conflicts_text}\n\n"
+                f"Equations:\n{eq_text}\n\n"
+                f"Sources: {len(sources)} selected."
+            )
+        ),
+    ])
+
+    parsed = ReportOutput.model_validate_json(response.content or "{}")
 
     report = {
         "question": question,
@@ -91,9 +79,6 @@ def build_report(state: ResearchState) -> dict:
     }
 
     msg = f"Built research report. Confidence: {parsed.confidence}"
-    stream: AsyncEventStream | None = state.get("stream")
-    if stream:
-        stream.emit_sync(AsyncEventStream.text_chunk("research", msg, "build_report"))
 
     return {
         "report_summary": report["summary"],

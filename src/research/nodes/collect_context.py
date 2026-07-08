@@ -4,9 +4,23 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.agent.event_stream import AsyncEventStream
 from src.config import settings
 from src.research.state import ResearchState
+
+
+def _list_wiki_pages(wiki_root: Path) -> list[Path]:
+    """Return all .md files under wiki root."""
+    if not wiki_root.exists():
+        return []
+    return sorted(wiki_root.rglob("*.md"))
+
+
+def _read_page(path: Path) -> str | None:
+    """Read a wiki page, returning None on failure."""
+    try:
+        return path.read_text(encoding="utf-8", errors="ignore")
+    except Exception:
+        return None
 
 
 def collect_context(state: ResearchState) -> dict:
@@ -18,23 +32,13 @@ def collect_context(state: ResearchState) -> dict:
     wiki_sources: list[dict[str, str]] = []
     wiki_root = settings.WIKI_ROOT
 
-    stream: AsyncEventStream | None = state.get("stream")
-    if stream:
-        stream.emit_sync(AsyncEventStream.progress(
-            "research", 0, 1, "Scanning wiki pages..."
-        ))
-
     # Scan wiki pages for relevance.
-    from src.tools.wiki import list_pages, read_page
-
-    for page_path in list_pages(wiki_root):
-        content = read_page(page_path)
+    for page_path in _list_wiki_pages(wiki_root):
+        content = _read_page(page_path)
         if not content:
             continue
 
         title = page_path.stem.replace("_", " ").lower()
-        rel_path = str(page_path.relative_to(wiki_root))
-
         content_lower = content.lower()
         matches = any(
             term.lower() in content_lower or term.lower() in title
@@ -49,29 +53,7 @@ def collect_context(state: ResearchState) -> dict:
                 "content_snippet": content[:2000],
             })
 
-    # Check legacy wiki too.
-    legacy = settings.LEGACY_WIKI_ROOT
-    if legacy and legacy.exists():
-        for md_file in legacy.rglob("*.md"):
-            if not md_file.is_file():
-                continue
-            try:
-                text = md_file.read_text(encoding="utf-8", errors="ignore")
-                if any(term.lower() in text.lower() for term in domain_terms):
-                    wiki_sources.append({
-                        "title": md_file.stem.replace("_", " ").title(),
-                        "type": "wiki",
-                        "path_or_url": str(md_file),
-                        "content_snippet": text[:2000],
-                    })
-            except Exception:
-                pass
-
     msg = f"Collected {len(wiki_sources)} candidate wiki sources."
-    if stream:
-        stream.emit_sync(AsyncEventStream.progress(
-            "research", 1, 1, msg
-        ))
 
     return {
         "wiki_context": wiki_sources,
