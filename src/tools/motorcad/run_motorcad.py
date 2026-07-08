@@ -1,43 +1,32 @@
-"""Motor-CAD launcher — start, load models, and run analyses.
-
-Provides:
-- ``launch_motorcad()`` — start or connect to Motor-CAD.
-- ``load_model()`` — open a .mot file.
-- ``run_magnetic()`` — run electromagnetic analysis.
-- ``close_motorcad()`` — clean shutdown.
-"""
+"""Motor-CAD launcher tools — start, load models, and run analyses."""
 
 from __future__ import annotations
 
-import os
-import subprocess
-import sys
 from pathlib import Path
 from typing import Any
 
-from src.tools.motorcad.get_results import extract_results
-from src.tools.motorcad.set_parameters import save_checkpoint, set_parameter
-from src.domain.motor.result_models import ElectromagneticResult
+from langchain_core.tools import tool
+
+from src.config.settings import REFERENCE_MOT
+
 
 _MC_INSTANCE: Any | None = None
 
 
-def launch_motorcad(
-    visible: bool = False,
-    model_path: str | Path | None = None,
-) -> Any:
-    """Launch (or connect to) a Motor-CAD instance.
+def _get_mc() -> Any:
+    """Return the active Motor-CAD instance or raise."""
+    if _MC_INSTANCE is None:
+        raise RuntimeError("Motor-CAD is not running. Call motorcad_launch first.")
+    return _MC_INSTANCE
 
-    Parameters
-    ----------
-    visible : bool
-        Whether to show the Motor-CAD GUI.
-    model_path : str | Path, optional
-        .mot file to load on startup.
 
-    Returns
-    -------
-    Motor-CAD COM instance (``ansys.motorcad.core``).
+@tool
+def motorcad_launch(visible: bool = False, model_path: str = "") -> str:
+    """Launch or connect to a Motor-CAD instance.
+
+    Args:
+        visible: Whether to show the Motor-CAD GUI.
+        model_path: Optional .mot file to load on startup. Defaults to reference model.
     """
     global _MC_INSTANCE
 
@@ -47,76 +36,75 @@ def launch_motorcad(
         mc = MotorCAD(visible=visible)
         _MC_INSTANCE = mc
 
-        if model_path:
-            mc.load_from_file(str(model_path))
-
-        return mc
+        path = model_path or str(REFERENCE_MOT)
+        if path and Path(path).exists():
+            mc.load_from_file(path)
+            return f"Motor-CAD launched and loaded {path}"
+        return "Motor-CAD launched (no model loaded)"
 
     except ImportError:
-        print("  ⚠️  ansys.motorcad.core not installed. Cannot launch Motor-CAD.")
-        return None
+        return "ERROR: ansys.motorcad.core not installed. Cannot launch Motor-CAD."
     except Exception as e:
-        print(f"  ⚠️  Motor-CAD launch failed: {e}")
-        return None
+        return f"ERROR: Motor-CAD launch failed: {e}"
 
 
-def load_model(mc_instance: Any | None = None, path: str | Path | None = None) -> bool:
-    """Load a .mot model into a Motor-CAD instance."""
-    mc = mc_instance or _MC_INSTANCE
-    if not mc:
-        return False
-    if not path:
-        path = Path.cwd() / "SynRM_45kW_IE5.mot"
+@tool
+def motorcad_load_model(path: str = "") -> str:
+    """Load a .mot model file into Motor-CAD.
+
+    Args:
+        path: Path to .mot file. Defaults to reference model.
+    """
+    mc = _get_mc()
+    target = path or str(REFERENCE_MOT)
 
     try:
-        mc.load_from_file(str(path))
-        return True
+        mc.load_from_file(target)
+        return f"Loaded {target}"
     except Exception as e:
-        print(f"  ⚠️  Load model failed: {e}")
-        return False
+        return f"ERROR: Load failed: {e}"
 
 
-def run_magnetic(mc_instance: Any | None = None) -> bool:
-    """Run the electromagnetic analysis context.
-
-    Per anti-hallucination rules: calls ``show_magnetic_context()`` first.
-    """
-    mc = mc_instance or _MC_INSTANCE
-    if not mc:
-        return False
+@tool
+def motorcad_run_magnetic() -> str:
+    """Run electromagnetic analysis. Calls show_magnetic_context() per anti-hallucination rules."""
+    mc = _get_mc()
 
     try:
         mc.show_magnetic_context()
-        return True
+        return "Electromagnetic analysis completed"
     except Exception as e:
-        print(f"  ⚠️  Magnetic analysis failed: {e}")
-        return False
+        return f"ERROR: Magnetic analysis failed: {e}"
 
 
-def run_and_extract(
-    mc_instance: Any | None = None,
-) -> ElectromagneticResult | None:
-    """Run magnetic analysis and extract results.
+@tool
+def motorcad_run_and_extract() -> str:
+    """Run electromagnetic analysis and extract all results as JSON.
 
-    Returns ElectromagneticResult or None on failure.
+    Returns torque, efficiency, power factor, inductances, and losses.
     """
-    mc = mc_instance or _MC_INSTANCE
-    if not mc:
-        return None
+    mc = _get_mc()
 
-    if not run_magnetic(mc):
-        return None
+    try:
+        mc.show_magnetic_context()
+    except Exception as e:
+        return f"ERROR: Magnetic analysis failed: {e}"
 
-    return extract_results(mc)
+    from src.tools.motorcad.get_results import extract_results
+
+    result = extract_results(mc)
+    return result.model_dump_json(indent=2)
 
 
-def close_motorcad(mc_instance: Any | None = None) -> None:
+@tool
+def motorcad_close() -> str:
     """Close Motor-CAD cleanly."""
     global _MC_INSTANCE
-    mc = mc_instance or _MC_INSTANCE
+    mc = _MC_INSTANCE
     if mc:
         try:
             mc.quit()
         except Exception:
             pass
     _MC_INSTANCE = None
+    return "Motor-CAD closed"

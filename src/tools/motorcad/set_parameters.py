@@ -1,4 +1,4 @@
-"""Motor-CAD parameter setting — safe wrappers with validation and checkpoints.
+"""Motor-CAD parameter setting tools — safe wrappers with validation and checkpoints.
 
 Anti-hallucination rules:
 - Call ``get_variable_names()`` before any set.
@@ -12,97 +12,118 @@ import os
 from pathlib import Path
 from typing import Any
 
+from langchain_core.tools import tool
 from src.domain.motor.parameter_mapping import validate_parameter
 
+from src.config.settings import REFERENCE_MOT
 
-def safe_get(mc_instance: Any, var_name: str) -> float | None:
-    """Safely read a variable, returning None on failure."""
+def _get_mc() -> Any:
+    if _MC_INSTANCE is None:
+        raise RuntimeError("Motor-CAD is not running. Call motorcad_launch first.")
+    return _MC_INSTANCE
+
+
+# Module-level instance holder (shared with run_motorcad.py via process global)
+_MC_INSTANCE: Any | None = None
+
+
+def set_mc_instance(mc: Any) -> None:
+    """Set the module-level Motor-CAD instance."""
+    global _MC_INSTANCE
+    _MC_INSTANCE = mc
+
+
+@tool
+def motorcad_safe_get(var_name: str) -> str:
+    """Read a variable from Motor-CAD. Returns the float value or 'Not found'."""
+    mc = _get_mc()
     try:
-        return float(mc_instance.get_variable(var_name))
+        val = float(mc.get_variable(var_name))
+        return str(val)
     except Exception:
-        return None
+        return f"Not found: {var_name}"
 
 
-def safe_set(mc_instance: Any, var_name: str, value: float) -> tuple[bool, str]:
-    """Set a Motor-CAD variable with safety checks.
+@tool
+def motorcad_safe_set(var_name: str, value: float) -> str:
+    """Set a Motor-CAD variable with verification (read-back check).
 
-    Steps:
-    1. Verify the variable exists via ``get_variable_names()``.
-    2. Set the value.
-    3. Verify the set by reading back.
-
-    Returns (success, message).
+    Anti-hallucination: verifies variable exists via get_variable_names(),
+    sets the value, then reads back to confirm.
     """
+    mc = _get_mc()
     try:
         # Step 1: verify variable exists.
-        available = mc_instance.get_variable_names()
+        available = mc.get_variable_names()
         if var_name not in available:
-            return (False, f"Variable '{var_name}' not found in Motor-CAD instance")
+            return f"ERROR: Variable '{var_name}' not found in Motor-CAD"
 
         # Step 2: set.
-        mc_instance.set_variable(var_name, value)
+        mc.set_variable(var_name, value)
 
         # Step 3: read back.
-        readback = mc_instance.get_variable(var_name)
+        readback = mc.get_variable(var_name)
         if abs(float(readback) - value) > 1e-6:
-            return (False, f"Set verify failed: {var_name} = {readback} (expected {value})")
+            return f"ERROR: Set verify failed: {var_name} = {readback} (expected {value})"
 
-        return (True, f"{var_name} = {value} OK")
-
+        return f"{var_name} = {value} OK"
     except Exception as e:
-        return (False, f"Failed to set {var_name}: {e}")
+        return f"ERROR: Failed to set {var_name}: {e}"
 
 
-def save_checkpoint(mc_instance: Any, path: str | Path | None = None) -> str:
-    """Save a checkpoint .mot file before making rotor changes.
+@tool
+def motorcad_set_parameter(var_name: str, value: float, domain: str = "stator", checkpoint_before: bool = False) -> str:
+    """Set a Motor-CAD parameter with domain validation and optional checkpoint.
 
-    Returns the checkpoint file path.
+    Validates against known ranges (stator/rotor/winding/rating domains).
+    Saves checkpoint before rotor changes if requested.
+
+    Args:
+        var_name: Motor-CAD variable name.
+        value: Target value.
+        domain: Validation domain — stator, rotor, winding, or rating.
+        checkpoint_before: Save a .mot checkpoint before setting (recommended for rotor params).
     """
-    if path is None:
-        path = Path.cwd() / "best_so_far.mot"
-    path = Path(path)
+    mc = _get_mc()
 
-    try:
-        mc_instance.save_to_file(str(path))
-        return str(path)
-    except Exception as e:
-        return f"Checkpoint save failed: {e}"
-
-
-def set_parameter(
-    mc_instance: Any,
-    var_name: str,
-    value: float,
-    domain: str = "stator",
-    checkpoint_before: bool = False,
-) -> tuple[bool, str]:
-    """Set a single Motor-CAD parameter with validation.
-
-    Parameters
-    ----------
-    mc_instance : Any
-        Motor-CAD COM instance.
-    var_name : str
-        Motor-CAD variable name.
-    value : float
-        Target value.
-    domain : str
-        Domain for range validation (stator, rotor, winding, rating).
-    checkpoint_before : bool
-        Save a checkpoint before setting (recommended for rotor params).
-
-    Returns
-    -------
-    (success, message)
-    """
-    # Validate range.
     valid, msg = validate_parameter(var_name, value, domain=domain)
     if not valid:
-        return False, msg
+        return f"ERROR: {msg}"
 
-    # Checkpoint.
     if checkpoint_before and "rotor" in domain.lower():
-        save_checkpoint(mc_instance)
+        try:
+            mc.save_to_file(str(Path.cwd() / "best_so_far.mot"))
+        except Exception:
+            pass  # non-fatal
 
-    # Set.
-    return safe_set(mc_instance, var_name, value)
+    # Delegate to safe_set logic inline
+    try:
+        available = mc.get_variable_names()
+        if var_name not in available:
+            return f"ERROR: Variable '{var_name}' not found"
+
+        mc.set_variable(var_name, value)
+        readback = mc.get_variable(var_name)
+        if abs(float(readback) - value) > 1e-6:
+            return f"ERROR: Set verify failed: {var_name} = {readback} (expected {value})"
+
+        return f"{var_name} = {value} OK"
+    except Exception as e:
+        return f"ERROR: Failed to set {var_name}: {e}"
+
+
+@tool
+def motorcad_save_checkpoint(path: str = "") -> str:
+    """Save a .mot checkpoint file before making changes.
+
+    Args:
+        path: Checkpoint file path. Defaults to 'best_so_far.mot' in cwd.
+    """
+    mc = _get_mc()
+    target = path or str(Path.cwd() / "best_so_far.mot")
+
+    try:
+        mc.save_to_file(target)
+        return f"Checkpoint saved: {target}"
+    except Exception as e:
+        return f"ERROR: Checkpoint save failed: {e}"
