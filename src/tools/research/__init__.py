@@ -4,6 +4,6 @@ This module provides the ResearchSubgraph class which can be imported for
 research delegation via the LangGraph pipeline.
 """
 
-from .research_tool import ResearchSubgraph
+from .research_tool import research_subgraph
 
-__all__ = ['ResearchSubgraph']
+__all__ = ['research_subgraph']
