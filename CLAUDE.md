@@ -1,7 +1,7 @@
 # CLAUDE.md — motor-deepagent
 
 **Project Root:** `D:\SRM\Agent\`
-**Updated:** 2026-07-05
+**Updated:** 2026-07-08
 
 ---
 
@@ -32,39 +32,34 @@
 
 ### Goal
 
-Build a **terminal-first engineering assistant** that starts as a repo/wiki/research coding agent and grows into a motor-design assistant with PyMotorCAD / experiment / optimization workflows.
+Build a **terminal-first engineering assistant** that starts as a motor-design assistant with PyMotorCAD / experiment / optimization workflows and grows into a broader engineering platform.
 
 ### Architecture
 
 ```
-User → DeepAgent Orchestrator
-         ├── Repo Coding Subagent
-         ├── Wiki Manager
-         ├── LangGraph Research Subgraph  (Phase 2)
-         └── Experiment / Execution Layer  (Phase 3-4)
+User → dcode (Deep Agents runtime)
+         ├── Built-in tools (read/write/grep/ls/execute/web_search/memory/skills)
+         ├── Motor-CAD Tools (src/tools/motorcad/)
+         ├── Research Subagent → LangGraph research subgraph
+         └── Domain Models (src/domain/motor/)
 ```
 
-**Principle:** DeepAgent for orchestration + built-in coding-agent capabilities. LangGraph only for structured multi-step workflows where explicit graph structure helps.
+**Principle:** Deep Agents for runtime + built-in capabilities. LangGraph only for the research subgraph where explicit graph structure helps.
 
 ### Key Files
 
 | File | Purpose |
 |------|---------|
-| `apps/cli/main.py` | CLI entry point (single-shot + REPL) |
-| `src/agent/build_agent.py` | Orchestrator builder |
-| `src/agent/prompts.py` | System prompts for all subsystems |
-| `src/agent/subagents.py` | Subagent configurations |
-| `src/agent/approvals.py` | Permission boundaries |
-| `src/agent/orchestration_helpers.py` | Task classification, artifact handoff |
-| `src/artifacts/` | Pydantic data contracts (ResearchReport, CodeReport, etc.) |
+| `config.toml` | Deep Agents configuration |
+| `AGENTS.md` | Motor specs, constraints, design strategy |
+| `src/tools/motorcad/` | Motor-CAD domain tools (Deep Agents compatible) |
+| `src/tools/research/` | Research subgraph wrapper tool |
+| `src/research/graph.py` | LangGraph research pipeline |
+| `src/domain/motor/` | Parameter maps, result models, geometry models |
 | `src/config/settings.py` | Project-wide paths and model config |
-| `src/tools/wiki/update_wiki.py` | Wiki Manager |
-| `src/tools/execution/run_script.py` | Script execution |
-| `src/skills/` | Skill definitions |
-| `workspace/wiki/` | Durable project knowledge base |
+| `src/artifacts/` | Pydantic data contracts |
 | `SynRM_45kW_IE5.mot` | Reference motor model |
 | `optimize_synrm_v4.py` | Existing optimization script (reference) |
-| `AGENTS.md` | Motor specs, constraints, strategy |
 
 ### Data Contracts
 
@@ -72,33 +67,9 @@ Subsystems exchange structured artifacts, not free-form text:
 
 | Artifact | Producer | Consumer |
 |----------|----------|----------|
-| `ResearchReport` | Research Subgraph | Orchestrator → Wiki Manager |
-| `CodeReport` | Repo Coding Subagent | Orchestrator → Wiki Manager |
-| `ExperimentReport` | Experiment Runner | Orchestrator → Wiki Manager |
-| `WikiUpdatePlan` | Orchestrator | Wiki Manager |
-
-### Project Wiki (workspace/wiki/)
-
-Persistent knowledge base for engineering knowledge:
-
-```
-workspace/wiki/
-├── index.md               # master index with [[wikilinks]]
-├── project_overview.md
-├── codebase_map.md
-├── known_issues.md
-├── active_tasks.md
-├── architecture/
-│   └── orchestrator.md
-├── motorcad/
-│   ├── workflow.md
-│   ├── parameters.md
-│   ├── result_fields.md
-│   └── experiments/
-└── papers/
-```
-
-Legacy reference wiki (Obsidian): `D:\SRM\Motor _CAD\ScriptFiles\wiki\`
+| `ResearchReport` | Research Subgraph | Deep Agents memory |
+| `CodeReport` | Deep Agents coding | Deep Agents memory |
+| `ExperimentReport` | Experiment Runner | Deep Agents memory |
 
 ### LLM Model Selection
 
@@ -109,8 +80,6 @@ All LLM calls route through **Opencode** (`ai.opencode.ai/zen/v1`). Model per su
 | Default | `MODEL_DEFAULT` | `deepseek-v4-flash-free` |
 | Research | `MODEL_RESEARCH` | `deepseek-v4-flash-free` |
 | Synthesis | `MODEL_SYNTHESIS` | `deepseek-v4-flash-free` |
-| Calculate | `MODEL_CALCULATE` | `deepseek-v4-flash-free` |
-| Design | `MODEL_DESIGN` | `deepseek-v4-flash-free` |
 
 ### PyMotorCAD Anti-Hallucination Rules
 
@@ -133,32 +102,21 @@ From `AGENTS.md` — followed when motor-domain tools are active:
 ### Core Dependencies
 | Package | Purpose |
 |---------|---------|
+| `deepagents` | Agent runtime (built-in tools, memory, HITL, subagents) |
+| `langgraph` | Research subgraph orchestration |
+| `langchain-core` | Tool decorators, message types |
+| `langchain-openai` | LLM client for Opencode API |
 | `pydantic>=2.0` | Data contracts / structured output |
-| `python-dotenv>=1.0` | Environment loading |
-
-### Phase 2 Dependencies
-| Package | Purpose |
-|---------|---------|
-| `langgraph>=0.4.0` | Research subgraph orchestration |
-| `chromadb>=0.6.0` | Vector store for RAG |
-| `sentence-transformers>=3.0.0` | Text embeddings |
-| `openai>=1.50.0` | OpenRouter API client |
-| `langchain-core>=0.3.0` | LangGraph message types |
 
 ### Phase 4 Dependencies
 | Package | Purpose |
 |---------|---------|
 | `ansys.motorcad.core` | PyMotorCAD (proprietary, Ansys EULA) |
-| `numpy>=2.0` | Numerical ops |
 
 ### External Services
-- **OpenRouter** — Free-tier LLM access (`qwen/qwq-32b`, `gemini-2.0-flash-exp`, etc.)
+- **Opencode** — LLM access (`ai.opencode.ai/zen/v1`)
+- **Tavily** — Web search (for `web_search` tool)
 - **Ansys Motor-CAD 2025.1.1** — FEA solver (local, licensed)
-
-### File Patterns
-- `.mot` — Motor-CAD model files (binary INI-like, 15k+ lines)
-- `.md` — Wiki pages with YAML frontmatter + `[[wikilinks]]`
-- `.py` — Agent code, tools, CLI
 
 ---
 
@@ -166,8 +124,9 @@ From `AGENTS.md` — followed when motor-domain tools are active:
 
 ```bash
 set OPENROUTER_API_KEY=sk-or-v1-...
-python -m apps.cli.main "inspect the repo module structure"
-python -m apps.cli.main          # interactive REPL
+set TAVILY_API_KEY=tvly-...
+dcode                              # interactive REPL
+dcode "inspect the motor parameters"   # single-shot
 ```
 
 ## Links
@@ -175,5 +134,3 @@ python -m apps.cli.main          # interactive REPL
 - Architecture spec: `AGENTS.md` (motor specs, constraints)
 - Reference motor model: `SynRM_45kW_IE5.mot`
 - Existing optimizer: `optimize_synrm_v4.py`
-- Project wiki: `workspace/wiki/`
-- Legacy wiki: `D:\SRM\Motor _CAD\ScriptFiles\wiki\`

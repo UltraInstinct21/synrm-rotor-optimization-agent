@@ -2,10 +2,17 @@
 __pycache__/
 *.pyc
 *.pyo
+*.py[cod]
+*$py.class
+*.so
 *.egg-info/
+dist/
+build/
+*.egg
 
 # Environment
 .env
+.env.local
 
 # Agent internals
 .claude/
@@ -19,7 +26,7 @@ backup*.mot
 best_so_far*.mot
 optimization_results*.csv
 
-# Session (conversation DB)
+# Session
 .session/
 
 # Experiments
@@ -27,15 +34,31 @@ workspace/experiments/*.log
 workspace/experiments/*.csv
 workspace/scratch/
 
-# Memory store
+# Memory store (Deep Agents)
 workspace/memory/
-
-# Debug dumps
-resp_dump.json
 
 # Research cache
 workspace/research_cache/
 
+# Debug dumps
+resp_dump.json
+
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
