@@ -1,7 +1,6 @@
 {
   "dependencies": ["."],
   "graphs": {
-    "motor-deepagent": "./src/agent/graph.py:motor_graph"
-  },
-  "env": ".env"
+    "motor_agent": "./src/agent/factory.py:build_agent"
+  }
 }

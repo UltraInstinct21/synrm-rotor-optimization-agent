@@ -16,17 +16,19 @@ def _list_wiki_pages(wiki_root: Path) -> list[Path]:
 
 
 def _read_page(path: Path) -> str | None:
-    """Read a wiki page, returning None on failure."""
+    """Read a wiki page, returning None on failure or oversized files."""
     try:
+        if path.stat().st_size > 1_048_576:  # Skip files > 1MB
+            return None
         return path.read_text(encoding="utf-8", errors="ignore")
-    except Exception:
+    except (OSError, IOError):
         return None
 
 
 def collect_context(state: ResearchState) -> dict:
     """Gather candidate sources from the wiki and local docs."""
     domain_terms = state.get("domain_terms", [])
-    question = state.get("normalized_question", state["question"])
+    question = state.get("normalized_question") or state.get("question", "")
     question_lower = question.lower()
 
     wiki_sources: list[dict[str, str]] = []
@@ -45,7 +47,7 @@ def collect_context(state: ResearchState) -> dict:
             for term in domain_terms + [question_lower]
         )
 
-        if matches or len(domain_terms) == 0:
+        if matches:
             wiki_sources.append({
                 "title": page_path.stem.replace("_", " ").title(),
                 "type": "wiki",

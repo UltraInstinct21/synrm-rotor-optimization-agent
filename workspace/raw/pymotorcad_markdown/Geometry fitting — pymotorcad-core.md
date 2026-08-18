@@ -1,5 +1,0 @@
-## Geometry fitting
-
-Geometry fitting functions are used to find line and arc entities to fit a list of coordinates within a defined tolerance for Motor-CAD Adaptive Templates geometry using PyMotorCAD. More information on Adaptive Templates is available in the User [guide](https://motorcad.docs.pyansys.com/version/stable/user_guide/index.html#ref-user-guide) under [Motor-CAD](https://motorcad.docs.pyansys.com/version/stable/user_guide/adaptive_templates.html#ref-adaptive-templates-ug) adaptive templates scripting.
-
-[return\\_entity\\_list](https://motorcad.docs.pyansys.com/version/stable/methods/_autosummary_geometry_fitting/ansys.motorcad.core.geometry_fitting.return_entity_list.html#ansys.motorcad.core.geometry_fitting.return_entity_list) (coordinates, ...) Get list of entities from a list of coordinates.

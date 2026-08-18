@@ -1,136 +1,95 @@
 # CLAUDE.md — motor-deepagent
 
-**Project Root:** `D:\SRM\Agent\`
-**Updated:** 2026-07-08
+**Project Root:** `D:\SRM\Agent\`  
+**Codename:** `motor-deepagent`  
+**Goal:** Terminal-first engineering assistant for SynRM motor design, PyMotorCAD script generation & execution (run files), wiki management, and structured research.
 
 ---
 
-## PART 1: WORKING RULES
+## 1. System Architecture & Split
 
-### 1. Planning & Context
+The system combines **DeepAgents** for orchestration/runtime capabilities with **LangGraph** for structured research workflows, backed by **durable wiki knowledge**.
 
-- **Think Before Coding:** Never guess. State assumptions explicitly and push back when a simpler approach exists.
-- **Explore First, Plan, Then Code:** Do not write code right away. Ask questions, surface tradeoffs, and output a step-by-step plan before making changes.
-- **Goal-Driven Execution:** Tell Claude what success looks like and let it iterate, rather than micromanaging every step.
-
-### 2. Code Quality & Discipline
-
-- **Simplicity First:** Write the minimum code required to solve the problem. Do not add speculative abstractions or error handling for impossible scenarios.
-- **Match Existing Style:** Always adopt the codebase's existing conventions, even if they differ from Claude's defaults.
-- **Surgical Changes:** Modify only what is required. Never refactor code that is not broken, and do not "improve" adjacent code unless requested.
-
-### 3. Session Management
-
-- **Manage Context Aggressively:** If a session goes wrong, do not try to fix the same mistake three times. Run `/compact` to clear the whiteboard, or start a fresh session.
-- **Use Checkpoints:** Git commit frequently — after every working change. Use commits as rewinding checkpoints.
-- **Pre-approve Actions:** Define which tools Claude can use. Risky operations (deleting files, running destructive commands) require confirmation.
-- **Create Reusable Skills:** Document recurring workflows so Claude knows exactly how to handle specific tasks every time.
-
----
-
-## PART 2: PROJECT — MOTOR-DEEPAGENT
-
-### Goal
-
-Build a **terminal-first engineering assistant** that starts as a motor-design assistant with PyMotorCAD / experiment / optimization workflows and grows into a broader engineering platform.
-
-### Architecture
-
-```
-User → dcode (Deep Agents runtime)
-         ├── Built-in tools (read/write/grep/ls/execute/web_search/memory/skills)
-         ├── Motor-CAD Tools (src/tools/motorcad/)
-         ├── Research Subagent → LangGraph research subgraph
-         └── Domain Models (src/domain/motor/)
+```text
+User / Terminal CLI (apps/cli/main.py)
+  ↓
+DeepAgent Orchestrator (deepagents runtime)
+  ├── Run Files Creation & Execution (create_run_file, execute_run_file, execute_generated_motorcad_code)
+  ├── Research Subagent Tool (src/tools/research/research_tool.py)
+  └── Wiki Agent Tool (src/tools/wiki/wiki_tool.py)
+        ↓
+      LangGraph Research Subgraph (src/research/graph.py @entrypoint)
+        ├── normalize_question
+        ├── collect_context
+        ├── source_selection
+        ├── read_extract
+        ├── synthesize_claims
+        └── build_report → ResearchReport
 ```
 
-**Principle:** Deep Agents for runtime + built-in capabilities. LangGraph only for the research subgraph where explicit graph structure helps.
-
-### Key Files
-
-| File | Purpose |
-|------|---------|
-| `config.toml` | Deep Agents configuration |
-| `AGENTS.md` | Motor specs, constraints, design strategy |
-| `src/tools/motorcad/` | Motor-CAD domain tools (Deep Agents compatible) |
-| `src/tools/research/` | Research subgraph wrapper tool |
-| `src/research/graph.py` | LangGraph research pipeline |
-| `src/domain/motor/` | Parameter maps, result models, geometry models |
-| `src/config/settings.py` | Project-wide paths and model config |
-| `src/artifacts/` | Pydantic data contracts |
-| `SynRM_45kW_IE5.mot` | Reference motor model |
-| `optimize_synrm_v4.py` | Existing optimization script (reference) |
-
-### Data Contracts
-
-Subsystems exchange structured artifacts, not free-form text:
-
-| Artifact | Producer | Consumer |
-|----------|----------|----------|
-| `ResearchReport` | Research Subgraph | Deep Agents memory |
-| `CodeReport` | Deep Agents coding | Deep Agents memory |
-| `ExperimentReport` | Experiment Runner | Deep Agents memory |
-
-### LLM Model Selection
-
-All LLM calls route through **Opencode** (`ai.opencode.ai/zen/v1`). Model per subsystem set via `.env`:
-
-| Role | Env Var | Current |
-|------|---------|---------|
-| Default | `MODEL_DEFAULT` | `deepseek-v4-flash-free` |
-| Research | `MODEL_RESEARCH` | `deepseek-v4-flash-free` |
-| Synthesis | `MODEL_SYNTHESIS` | `deepseek-v4-flash-free` |
-
-### PyMotorCAD Anti-Hallucination Rules
-
-From `AGENTS.md` — followed when motor-domain tools are active:
-
-1. `mc.get_variable_names()` before any `set`/`get`
-2. Use `safe_get`/`safe_set` wrappers — never raw calls
-3. `show_magnetic_context()` before electromagnetic analysis
-4. Save before changing rotor params (`best_so_far.mot`)
-5. Read all results before changing any parameter
+### Core Separation of Responsibilities
+- **DeepAgent Orchestrator:** Creates PyMotorCAD Python script run files, executes them, manages user interaction, planning/todos, subagent routing, context summarization, and built-in file/tool execution.
+- **Run Files Tools:** Allows DeepAgent to construct syntactically correct PyMotorCAD scripts and run them safely in sandboxed subprocesses.
+- **LangGraph Subgraph:** Owns explicit multi-step research pipelines (`normalize` → `collect` → `select` → `extract` → `synthesize` → `report`).
+- **Wiki Agent Tool:** Curates and queries durable project knowledge under `wiki/` (`search`, `read`, `list`, `write`).
 
 ---
 
-## PART 3: TECH STACK
+## 2. DeepAgent Tools & Subsystems
 
-### Python Environment
-- Python 3.13.5 (Anaconda, `C:\Users\sarth\anaconda3`)
-- Windows 11
-
-### Core Dependencies
-| Package | Purpose |
-|---------|---------|
-| `deepagents` | Agent runtime (built-in tools, memory, HITL, subagents) |
-| `langgraph` | Research subgraph orchestration |
-| `langchain-core` | Tool decorators, message types |
-| `langchain-openai` | LLM client for Opencode API |
-| `pydantic>=2.0` | Data contracts / structured output |
-
-### Phase 4 Dependencies
-| Package | Purpose |
-|---------|---------|
-| `ansys.motorcad.core` | PyMotorCAD (proprietary, Ansys EULA) |
-
-### External Services
-- **Opencode** — LLM access (`ai.opencode.ai/zen/v1`)
-- **Tavily** — Web search (for `web_search` tool)
-- **Ansys Motor-CAD 2025.1.1** — FEA solver (local, licensed)
+1. **Run File Tools (`create_run_file`, `execute_run_file`, `execute_generated_motorcad_code`):**
+   - Create Python scripts using PyMotorCAD (`ansys.motorcad.core.MotorCAD`) for simulation, parameter sweeps, and optimization.
+   - Execute generated run files in sandboxed subprocess environment.
+2. **Research Tool (`research_subgraph`):**
+   - Literature review and engineering domain research pipeline.
+3. **Wiki Tool (`wiki_tool`):**
+   - Search, read, list, and update wiki documentation in `wiki/`.
 
 ---
 
-## Quick Start
+## 3. Directory Map
+
+| Path | Description |
+|------|-------------|
+| [`apps/cli/`](file:///D:/SRM/Agent/apps/cli/) | Rich terminal CLI harness (`main.py`, `app.py`, REPL) |
+| [`src/agent/`](file:///D:/SRM/Agent/src/agent/) | DeepAgent factory (`factory.py`), graph, state, runtime |
+| [`src/tools/execution.py`](file:///D:/SRM/Agent/src/tools/execution.py) | Run file creation and sandboxed code execution tools |
+| [`src/tools/research/`](file:///D:/SRM/Agent/src/tools/research/) | `@tool` wrapper for LangGraph research subgraph |
+| [`src/tools/wiki/`](file:///D:/SRM/Agent/src/tools/wiki/) | Wiki agent `@tool` for searching, reading, listing, updating wiki |
+| [`src/domain/motor/`](file:///D:/SRM/Agent/src/domain/motor/) | Motor parameters, geometry models, result definitions |
+| [`src/artifacts/`](file:///D:/SRM/Agent/src/artifacts/) | Pydantic data schemas for inter-component handoff |
+| [`wiki/`](file:///D:/SRM/Agent/wiki/) | Durable project knowledge (`project_overview.md`, `codebase_map.md`, `active_tasks.md`, `known_issues.md`) |
+| [`AGENTS.md`](file:///D:/SRM/Agent/AGENTS.md) | Motor specification, optimization variables, and anti-hallucination rules |
+| [`config.toml`](file:///D:/SRM/Agent/config.toml) | DeepAgents runtime configuration |
+| [`pyproject.toml`](file:///D:/SRM/Agent/pyproject.toml) | Dependencies (`deepagents`, `langgraph`, `langchain-core`, `pydantic`) |
+
+---
+
+## 4. PyMotorCAD Scripting Rules
+
+From [`AGENTS.md`](file:///D:/SRM/Agent/AGENTS.md) — strictly mandatory when generating PyMotorCAD run files:
+
+1. **Parameter Database Search:** Search unknown or unverified variable names in `workspace/wiki/motorcad/parameter_database/` (`index.md`, `categories/*.md`, `parameters/<Name>.md`) using `wiki_tool`.
+2. **Discovery Fallback:** Call `mc.get_variable_names()` before any `get`/`set` call if parameter string remains uncertain.
+3. **Safe Wrappers:** Include `safe_get` / `safe_set` helper functions in generated scripts.
+4. **Context Check:** Always invoke `mc.show_magnetic_context()` before running EMag calculations.
+5. **Model Backup:** Save `best_so_far.mot` before mutating rotor parameters.
+6. **Atomic Result Reading:** Read all required outputs (`ShaftTorque`, `InputPower`, loss breakdown) *immediately* after calculation.
+
+### Motor-CAD Wiki Navigation Map (`workspace/wiki/motorcad/`)
+- `parameter_database/`: 13,004 indexed parameters, 140 categories, parameter spec sheets.
+- `pymotorcad-*.md`: Detailed API function & code documentation (`calculations-api.md`, `geometry-*.md`, `emag-example.md`, `thermal-*.md`, `lab-api.md`, `graphs-api.md`, `errors.md`).
+
+---
+
+## 5. Development & CLI Commands
 
 ```bash
-set OPENROUTER_API_KEY=sk-or-v1-...
-set TAVILY_API_KEY=tvly-...
-dcode                              # interactive REPL
-dcode "inspect the motor parameters"   # single-shot
+# Launch interactive terminal CLI
+python -m apps.cli.main
+# or installed entrypoint:
+motor
+
+# Run tests
+pytest
 ```
-
-## Links
-
-- Architecture spec: `AGENTS.md` (motor specs, constraints)
-- Reference motor model: `SynRM_45kW_IE5.mot`
-- Existing optimizer: `optimize_synrm_v4.py`

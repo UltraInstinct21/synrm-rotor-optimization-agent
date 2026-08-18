@@ -1,0 +1,81 @@
+---
+type: motorcad_parameter
+parameter_name: TransientResultsAnalysisEnabled
+category: Transient_Settings
+input_output: i/p
+data_type: boolean
+units: N/A
+default_value: 'False'
+source_file: D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx
+aliases:
+- TransientResultsAnalysisEnabled
+- Transient Results Analysis Enabled
+- transient_results_analysis_enabled
+- transientResultsAnalysisEnabled
+- transientresultsanalysisenabled
+related_parameters:
+- '[[motorcad/parameter_database/parameters/TransientResultsAnalysisFile|TransientResultsAnalysisFile]]'
+- '[[motorcad/parameter_database/parameters/TransientResultsAnalysisPeriod|TransientResultsAnalysisPeriod]]'
+- '[[motorcad/parameter_database/parameters/EnableTemperatureVariationWithinStep|EnableTemperatureVariationWithinStep]]'
+- '[[motorcad/parameter_database/parameters/TemperatureVariationWithinStep|TemperatureVariationWithinStep]]'
+- '[[motorcad/parameter_database/parameters/AllowableTemperatureVariation|AllowableTemperatureVariation]]'
+- '[[motorcad/parameter_database/parameters/TransientGraphUpdateDisabled|TransientGraphUpdateDisabled]]'
+- '[[motorcad/parameter_database/parameters/TransientResultsEnabled|TransientResultsEnabled]]'
+- '[[motorcad/parameter_database/parameters/TransientResultsDecimalSeparator|TransientResultsDecimalSeparator]]'
+- '[[motorcad/parameter_database/parameters/TransientRelativeError|TransientRelativeError]]'
+- '[[motorcad/parameter_database/parameters/TransientErrorWeightingMethod|TransientErrorWeightingMethod]]'
+related_workflows: []
+related_concepts: []
+confidence: Verified
+---
+
+# TransientResultsAnalysisEnabled
+
+## Summary
+When enabled the transient results are loaded from a file
+
+## Description
+When enabled the transient results are loaded from a file
+
+## Metadata
+- **Input/Output**: i/p
+- **Category**: [[motorcad/parameter_database/categories/Transient_Settings|Transient_Settings]]
+- **Units**: N/A
+- **Default Value**: False
+- **Data Type**: [[motorcad/parameter_database/data_types/boolean|boolean]]
+
+## Search Keywords
+- `TransientResultsAnalysisEnabled`
+- `Transient Results Analysis Enabled`
+- `transient_results_analysis_enabled`
+- `transientResultsAnalysisEnabled`
+- `transientresultsanalysisenabled`
+- `Transient_Settings`
+- `boolean`
+- `when`
+- `enabled`
+- `the`
+- `transient`
+- `results`
+- `are`
+- `loaded`
+- `from`
+- `file`
+
+## Related Parameters
+- [[motorcad/parameter_database/parameters/TransientResultsAnalysisFile|TransientResultsAnalysisFile]]
+- [[motorcad/parameter_database/parameters/TransientResultsAnalysisPeriod|TransientResultsAnalysisPeriod]]
+- [[motorcad/parameter_database/parameters/EnableTemperatureVariationWithinStep|EnableTemperatureVariationWithinStep]]
+- [[motorcad/parameter_database/parameters/TemperatureVariationWithinStep|TemperatureVariationWithinStep]]
+- [[motorcad/parameter_database/parameters/AllowableTemperatureVariation|AllowableTemperatureVariation]]
+- [[motorcad/parameter_database/parameters/TransientGraphUpdateDisabled|TransientGraphUpdateDisabled]]
+- [[motorcad/parameter_database/parameters/TransientResultsEnabled|TransientResultsEnabled]]
+- [[motorcad/parameter_database/parameters/TransientResultsDecimalSeparator|TransientResultsDecimalSeparator]]
+- [[motorcad/parameter_database/parameters/TransientRelativeError|TransientRelativeError]]
+- [[motorcad/parameter_database/parameters/TransientErrorWeightingMethod|TransientErrorWeightingMethod]]
+
+## Related Wiki Pages
+No direct engineering concept page linked.
+
+## Source
+Original CSV / Excel: `D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx`

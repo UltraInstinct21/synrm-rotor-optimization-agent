@@ -1,0 +1,77 @@
+---
+type: motorcad_parameter
+parameter_name: Duty_Cycle_Speed_Start
+category: Transient
+input_output: i/p
+data_type: double
+units: rpm
+default_value: '3000'
+source_file: D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx
+aliases:
+- Duty_Cycle_Speed_Start
+- Duty Cycle Speed Start
+- duty_cycle_speed_start
+- dutyCycleSpeedStart
+related_parameters:
+- '[[motorcad/parameter_database/parameters/TransientCalculationType|TransientCalculationType]]'
+- '[[motorcad/parameter_database/parameters/Duty_Cycle_Definition|Duty_Cycle_Definition]]'
+- '[[motorcad/parameter_database/parameters/Duty_Cycle_Input_Type|Duty_Cycle_Input_Type]]'
+- '[[motorcad/parameter_database/parameters/Duty_Cycle_Drive_Type|Duty_Cycle_Drive_Type]]'
+- '[[motorcad/parameter_database/parameters/Duty_Cycle_DC_Bus_Voltage_Definition|Duty_Cycle_DC_Bus_Voltage_Definition]]'
+- '[[motorcad/parameter_database/parameters/Duty_Cycle_Vehicle_MassMethod|Duty_Cycle_Vehicle_MassMethod]]'
+- '[[motorcad/parameter_database/parameters/Duty_Cycle_SyncCurrentLimit_Method_Lab|Duty_Cycle_SyncCurrentLimit_Method_Lab]]'
+- '[[motorcad/parameter_database/parameters/DutyCycleTotalLoss|DutyCycleTotalLoss]]'
+- '[[motorcad/parameter_database/parameters/Duty_Cycle_Gear_Ratio_Definition|Duty_Cycle_Gear_Ratio_Definition]]'
+- '[[motorcad/parameter_database/parameters/Duty_Cycle_Transient_Period|Duty_Cycle_Transient_Period]]'
+related_workflows: []
+related_concepts: []
+confidence: Verified
+---
+
+# Duty_Cycle_Speed_Start
+
+## Summary
+Speed at the start of each period of the duty cycle
+
+## Description
+Speed at the start of each period of the duty cycle
+
+## Metadata
+- **Input/Output**: i/p
+- **Category**: [[motorcad/parameter_database/categories/Transient|Transient]]
+- **Units**: rpm
+- **Default Value**: 3000
+- **Data Type**: [[motorcad/parameter_database/data_types/double|double]]
+
+## Search Keywords
+- `Duty_Cycle_Speed_Start`
+- `Duty Cycle Speed Start`
+- `duty_cycle_speed_start`
+- `dutyCycleSpeedStart`
+- `Transient`
+- `double`
+- `speed`
+- `the`
+- `start`
+- `each`
+- `period`
+- `duty`
+- `cycle`
+
+## Related Parameters
+- [[motorcad/parameter_database/parameters/TransientCalculationType|TransientCalculationType]]
+- [[motorcad/parameter_database/parameters/Duty_Cycle_Definition|Duty_Cycle_Definition]]
+- [[motorcad/parameter_database/parameters/Duty_Cycle_Input_Type|Duty_Cycle_Input_Type]]
+- [[motorcad/parameter_database/parameters/Duty_Cycle_Drive_Type|Duty_Cycle_Drive_Type]]
+- [[motorcad/parameter_database/parameters/Duty_Cycle_DC_Bus_Voltage_Definition|Duty_Cycle_DC_Bus_Voltage_Definition]]
+- [[motorcad/parameter_database/parameters/Duty_Cycle_Vehicle_MassMethod|Duty_Cycle_Vehicle_MassMethod]]
+- [[motorcad/parameter_database/parameters/Duty_Cycle_SyncCurrentLimit_Method_Lab|Duty_Cycle_SyncCurrentLimit_Method_Lab]]
+- [[motorcad/parameter_database/parameters/DutyCycleTotalLoss|DutyCycleTotalLoss]]
+- [[motorcad/parameter_database/parameters/Duty_Cycle_Gear_Ratio_Definition|Duty_Cycle_Gear_Ratio_Definition]]
+- [[motorcad/parameter_database/parameters/Duty_Cycle_Transient_Period|Duty_Cycle_Transient_Period]]
+
+## Related Wiki Pages
+No direct engineering concept page linked.
+
+## Source
+Original CSV / Excel: `D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx`

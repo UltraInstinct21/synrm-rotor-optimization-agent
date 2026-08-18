@@ -1,0 +1,73 @@
+---
+type: motorcad_parameter
+parameter_name: Area_Airgap_Shaft_Axle_Rear_Outer_Surface
+category: Surface_Area
+input_output: o/p
+data_type: double
+units: mm²
+default_value: '0'
+source_file: D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx
+aliases:
+- Area_Airgap_Shaft_Axle_Rear_Outer_Surface
+- Area Airgap Shaft Axle Rear Outer Surface
+- area_airgap_shaft_axle_rear_outer_surface
+- areaAirgapShaftAxleRearOuterSurface
+related_parameters:
+- '[[motorcad/parameter_database/parameters/Area_Airgap_Cup_Endcap_Inner_Surface|Area_Airgap_Cup_Endcap_Inner_Surface]]'
+- '[[motorcad/parameter_database/parameters/Area_Airgap_Cup_Endcap_Outer_Surface|Area_Airgap_Cup_Endcap_Outer_Surface]]'
+- '[[motorcad/parameter_database/parameters/Airgap_Cup_Endcap_Radiation_Exchange_Factor_Inner_Outer|Airgap_Cup_Endcap_Radiation_Exchange_Factor_Inner_Outer]]'
+- '[[motorcad/parameter_database/parameters/Airgap_Cup_Endcap_Radiation_Exchange_Factor_Outer_Inner|Airgap_Cup_Endcap_Radiation_Exchange_Factor_Outer_Inner]]'
+- '[[motorcad/parameter_database/parameters/Area_EWdgF_Endcap_Inner_Surface|Area_EWdgF_Endcap_Inner_Surface]]'
+- '[[motorcad/parameter_database/parameters/Area_ES_EndRing_Bore_F|Area_ES_EndRing_Bore_F]]'
+- '[[motorcad/parameter_database/parameters/Area_ES_EndRing_Outer_F|Area_ES_EndRing_Outer_F]]'
+- '[[motorcad/parameter_database/parameters/Area_ES_EndRing_End_F|Area_ES_EndRing_End_F]]'
+- '[[motorcad/parameter_database/parameters/Area_ES_EndRing_ExtBore_F|Area_ES_EndRing_ExtBore_F]]'
+- '[[motorcad/parameter_database/parameters/Area_ES_EndRing_ExtOuter_F|Area_ES_EndRing_ExtOuter_F]]'
+related_workflows: []
+related_concepts: []
+confidence: Verified
+---
+
+# Area_Airgap_Shaft_Axle_Rear_Outer_Surface
+
+## Summary
+Airgap_Shaft_Axle_Rear surface area - outer surface
+
+## Description
+Airgap_Shaft_Axle_Rear surface area - outer surface
+
+## Metadata
+- **Input/Output**: o/p
+- **Category**: [[motorcad/parameter_database/categories/Surface_Area|Surface_Area]]
+- **Units**: mm²
+- **Default Value**: 0
+- **Data Type**: [[motorcad/parameter_database/data_types/double|double]]
+
+## Search Keywords
+- `Area_Airgap_Shaft_Axle_Rear_Outer_Surface`
+- `Area Airgap Shaft Axle Rear Outer Surface`
+- `area_airgap_shaft_axle_rear_outer_surface`
+- `areaAirgapShaftAxleRearOuterSurface`
+- `Surface_Area`
+- `double`
+- `surface`
+- `area`
+- `outer`
+
+## Related Parameters
+- [[motorcad/parameter_database/parameters/Area_Airgap_Cup_Endcap_Inner_Surface|Area_Airgap_Cup_Endcap_Inner_Surface]]
+- [[motorcad/parameter_database/parameters/Area_Airgap_Cup_Endcap_Outer_Surface|Area_Airgap_Cup_Endcap_Outer_Surface]]
+- [[motorcad/parameter_database/parameters/Airgap_Cup_Endcap_Radiation_Exchange_Factor_Inner_Outer|Airgap_Cup_Endcap_Radiation_Exchange_Factor_Inner_Outer]]
+- [[motorcad/parameter_database/parameters/Airgap_Cup_Endcap_Radiation_Exchange_Factor_Outer_Inner|Airgap_Cup_Endcap_Radiation_Exchange_Factor_Outer_Inner]]
+- [[motorcad/parameter_database/parameters/Area_EWdgF_Endcap_Inner_Surface|Area_EWdgF_Endcap_Inner_Surface]]
+- [[motorcad/parameter_database/parameters/Area_ES_EndRing_Bore_F|Area_ES_EndRing_Bore_F]]
+- [[motorcad/parameter_database/parameters/Area_ES_EndRing_Outer_F|Area_ES_EndRing_Outer_F]]
+- [[motorcad/parameter_database/parameters/Area_ES_EndRing_End_F|Area_ES_EndRing_End_F]]
+- [[motorcad/parameter_database/parameters/Area_ES_EndRing_ExtBore_F|Area_ES_EndRing_ExtBore_F]]
+- [[motorcad/parameter_database/parameters/Area_ES_EndRing_ExtOuter_F|Area_ES_EndRing_ExtOuter_F]]
+
+## Related Wiki Pages
+- [[design_guidelines/airgap-guidelines|Airgap Guidelines]]
+
+## Source
+Original CSV / Excel: `D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx`

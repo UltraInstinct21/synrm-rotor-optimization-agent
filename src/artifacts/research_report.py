@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Source(BaseModel):
@@ -18,8 +18,7 @@ class Source(BaseModel):
     )
     path_or_url: str = Field(description="Path or URL to the source")
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class ResearchReport(BaseModel):

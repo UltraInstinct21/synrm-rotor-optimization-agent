@@ -1,0 +1,79 @@
+---
+type: motorcad_parameter
+parameter_name: IMOnLoad_PowerFactor
+category: Magnetics
+input_output: o/p
+data_type: double
+units: N/A
+default_value: '0'
+source_file: D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx
+aliases:
+- IMOnLoad_PowerFactor
+- IM On Load Power Factor
+- im_on_load_power_factor
+- imOnLoadPowerFactor
+- imonload_powerfactor
+related_parameters:
+- '[[motorcad/parameter_database/parameters/NumLoadPoints|NumLoadPoints]]'
+- '[[motorcad/parameter_database/parameters/LoadPoint_Current_Array|LoadPoint_Current_Array]]'
+- '[[motorcad/parameter_database/parameters/LoadPoint_PhaseAdvance_Array|LoadPoint_PhaseAdvance_Array]]'
+- '[[motorcad/parameter_database/parameters/LoadPoint_Torque_Array|LoadPoint_Torque_Array]]'
+- '[[motorcad/parameter_database/parameters/LoadPoint_Calculated_Torque_Array|LoadPoint_Calculated_Torque_Array]]'
+- '[[motorcad/parameter_database/parameters/IMOnLoad_RMSPhaseBackEMF_T|IMOnLoad_RMSPhaseBackEMF_T]]'
+- '[[motorcad/parameter_database/parameters/IMOnLoad_RMSPhaseBackEMF_L|IMOnLoad_RMSPhaseBackEMF_L]]'
+- '[[motorcad/parameter_database/parameters/IMOnLoad_RMSLineBackEMF_T|IMOnLoad_RMSLineBackEMF_T]]'
+- '[[motorcad/parameter_database/parameters/IMOnLoad_RMSLineBackEMF_L|IMOnLoad_RMSLineBackEMF_L]]'
+- '[[motorcad/parameter_database/parameters/IMOnLoad_IronLosses|IMOnLoad_IronLosses]]'
+related_workflows: []
+related_concepts: []
+confidence: Verified
+---
+
+# IMOnLoad_PowerFactor
+
+## Summary
+The on load power factor from the phasors
+
+## Description
+The on load power factor from the phasors
+
+## Metadata
+- **Input/Output**: o/p
+- **Category**: [[motorcad/parameter_database/categories/Magnetics|Magnetics]]
+- **Units**: N/A
+- **Default Value**: 0
+- **Data Type**: [[motorcad/parameter_database/data_types/double|double]]
+
+## Search Keywords
+- `IMOnLoad_PowerFactor`
+- `IM On Load Power Factor`
+- `im_on_load_power_factor`
+- `imOnLoadPowerFactor`
+- `imonload_powerfactor`
+- `Magnetics`
+- `double`
+- `the`
+- `load`
+- `power`
+- `factor`
+- `from`
+- `phasors`
+
+## Related Parameters
+- [[motorcad/parameter_database/parameters/NumLoadPoints|NumLoadPoints]]
+- [[motorcad/parameter_database/parameters/LoadPoint_Current_Array|LoadPoint_Current_Array]]
+- [[motorcad/parameter_database/parameters/LoadPoint_PhaseAdvance_Array|LoadPoint_PhaseAdvance_Array]]
+- [[motorcad/parameter_database/parameters/LoadPoint_Torque_Array|LoadPoint_Torque_Array]]
+- [[motorcad/parameter_database/parameters/LoadPoint_Calculated_Torque_Array|LoadPoint_Calculated_Torque_Array]]
+- [[motorcad/parameter_database/parameters/IMOnLoad_RMSPhaseBackEMF_T|IMOnLoad_RMSPhaseBackEMF_T]]
+- [[motorcad/parameter_database/parameters/IMOnLoad_RMSPhaseBackEMF_L|IMOnLoad_RMSPhaseBackEMF_L]]
+- [[motorcad/parameter_database/parameters/IMOnLoad_RMSLineBackEMF_T|IMOnLoad_RMSLineBackEMF_T]]
+- [[motorcad/parameter_database/parameters/IMOnLoad_RMSLineBackEMF_L|IMOnLoad_RMSLineBackEMF_L]]
+- [[motorcad/parameter_database/parameters/IMOnLoad_IronLosses|IMOnLoad_IronLosses]]
+
+## Related Wiki Pages
+- [[concepts/power-factor|Power Factor Concept]]
+- [[equations/power-factor-equation|Power Factor Equation]]
+
+## Source
+Original CSV / Excel: `D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx`

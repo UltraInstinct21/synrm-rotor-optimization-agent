@@ -18,6 +18,8 @@ created: 2026-07-05
 
 ## Motor-CAD
 
+- [[motorcad/index]] — Motor-CAD Knowledge Base Index
+- [[motorcad/parameter_database/index]] — Complete Parameter Database (13,004 Parameters)
 - [[motorcad/workflow]] — Standard Motor-CAD workflow
 - [[motorcad/parameters]] — Key design parameters
 - [[motorcad/result_fields]] — Output metrics

@@ -237,9 +237,8 @@ def connect_motorcad():
 | Thermal steady-state | `mc.do_steady_state_analysis()` |
 | Coupled emag+thermal | `mc.do_magnetic_thermal_calculation()` |
 | Set material | `mc.set_component_material(component, material)` |
-| Save model | `mc.save_to_file(path)` |
 | Load model | `mc.load_from_file(path)` |
-| Discover variables | `mc.get_variable_names()` |
+| Search parameter database | `wiki_tool(action="search", query="...")` |
 | Close instance | `mc.quit()` |
 
 ---
@@ -257,7 +256,35 @@ def connect_motorcad():
 | Winding temp max | `T_[Winding_Max]` |
 | Winding temp average | `T_[Winding_Average]` |
 
-**For any variable not in this list: call `discover_variables()` first. Never guess.**
+**For any variable not in this list: search `workspace/wiki/motorcad/parameter_database` using `wiki_tool`. Never guess variable names or run trial-and-error solver loops.**
+
+---
+
+## Mandatory Parameter Database Search & Navigation
+
+When writing any script, any unknown or unverified Motor-CAD parameters MUST be searched in the parameter database located at:
+`workspace/wiki/motorcad/parameter_database/`
+
+### How to Navigate `workspace/wiki/motorcad/`:
+1. **Parameter Database (`workspace/wiki/motorcad/parameter_database/`)**:
+   - `index.md`: Master index listing all 13,004 Motor-CAD parameters across 140 categories.
+   - `categories/`: 140 category breakdown files (e.g., `Dimensions.md`, `Magnetics.md`, `Calc_Options.md`, `Airgap.md`, `Thermal.md`, `Winding.md`, `FEA_Settings.md`, `Mechanical.md`, `Losses_At_RPM_Ref.md`). Read a category file to discover all related parameters for a subsystem.
+   - `parameters/<ParameterName>.md`: Direct detail specification files for exact parameter names, data types, read/write permissions, default values, units, and descriptions.
+   - `data_types/` & `reports/`: Data types and coverage audit reports.
+2. **Motor-CAD Code & API Function Reference (`workspace/wiki/motorcad/`)**:
+   - `index.md`: Knowledge base index.
+   - `workflow.md`: Standard Motor-CAD simulation workflow steps.
+   - `parameters.md` & `result_fields.md`: Common design inputs and output result metrics.
+   - **PyMotorCAD API Docs (`pymotorcad-*.md`)**:
+     - `pymotorcad-getting-started.md`: Connection & initialization (`ansys.motorcad.core.MotorCAD`).
+     - `pymotorcad-calculations-api.md`: Solvers & calculation methods (`do_magnetic_calculation`, `do_steady_state_analysis`, `show_magnetic_context`, etc.).
+     - `pymotorcad-geometry-basic.md` / `objects.md` / `drawing.md` / `shapes.md` / `tree.md`: Geometry creation, drawing, shapes, and tree manipulation.
+     - `pymotorcad-adaptive-geometry.md` & `pymotorcad-adaptive-templates-guide.md`: Adaptive template manipulation.
+     - `pymotorcad-curved-flux-barriers.md` & `pymotorcad-bezier-rotor-pockets.md`: Rotor flux barrier definitions and Bezier pocket geometry.
+     - `pymotorcad-emag-example.md` & `pymotorcad-thermal-example.md` & `pymotorcad-thermal-steady-state.md` & `pymotorcad-thermal-transient.md`: Full script execution examples for EMag & Thermal calculations.
+     - `pymotorcad-lab-api.md` & `pymotorcad-lab-model-example.md`: Motor-LAB API functions and operating point calculations.
+     - `pymotorcad-graphs-api.md` & `pymotorcad-force-extraction.md` & `pymotorcad-stress-postprocessing.md`: Post-processing graphs, forces, and stress extraction.
+     - `pymotorcad-errors.md` & `pymotorcad-troubleshooting.md`: Exception handling and debugging.
 
 ---
 
@@ -266,23 +293,13 @@ def connect_motorcad():
 Motor-CAD variable names are exact internal strings. Wrong names cause silent
 wrong results or exceptions with no indication of which variable failed.
 
-### Rule 1 — Always discover before first use
+### Rule 1 — Search parameter database before writing script
+
+First check `workspace/wiki/motorcad/parameter_database/parameters/<ParameterName>.md` using `wiki_tool` or `grep`:
 
 ```python
-def discover_variables(mc, keyword):
-    try:
-        all_vars = mc.get_variable_names()
-        matches = [v for v in all_vars if keyword.lower() in v.lower()]
-        print(f"  '{keyword}' matches: {matches}")
-        return matches
-    except Exception as e:
-        print(f"  discover_variables failed: {e}")
-        return []
-
-# Run at script startup after loading model:
-for kw in ["torque", "efficiency", "power", "barrier", "diameter",
-           "bridge", "web", "thickness", "winding", "current", "voltage"]:
-    discover_variables(mc, kw)
+# Search parameter database offline before running scripts:
+# Example: wiki_tool(action="search", query="Windage")
 ```
 
 ### Rule 2 — Always use safe_get / safe_set wrappers

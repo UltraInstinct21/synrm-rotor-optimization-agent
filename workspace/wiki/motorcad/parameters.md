@@ -42,4 +42,5 @@ Reference for key Motor-CAD parameters used in SynRM / PMaSynRM design.
 
 ## Related
 
+- [[motorcad/parameter_database/index|Complete Motor-CAD Parameter Database (13,004 Parameters)]]
 - [[motorcad/workflow]]

@@ -1,0 +1,82 @@
+---
+type: motorcad_parameter
+parameter_name: Sync_ModelSkewMethod_Lab
+category: ModelParameters_MotorLAB
+input_output: compatibility
+data_type: integer
+units: N/A
+default_value: '1'
+source_file: D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx
+aliases:
+- Sync_ModelSkewMethod_Lab
+- Sync Model Skew Method Lab
+- sync_model_skew_method_lab
+- syncModelSkewMethodLab
+- sync_modelskewmethod_lab
+related_parameters:
+- '[[motorcad/parameter_database/parameters/PsiQ_coeff_MotorLAB|PsiQ_coeff_MotorLAB]]'
+- '[[motorcad/parameter_database/parameters/PsiD_coeff_MotorLAB|PsiD_coeff_MotorLAB]]'
+- '[[motorcad/parameter_database/parameters/EndWindingResistance_Lab|EndWindingResistance_Lab]]'
+- '[[motorcad/parameter_database/parameters/EndWindingResistance_Field_Lab|EndWindingResistance_Field_Lab]]'
+- '[[motorcad/parameter_database/parameters/EndWindingInductance_Lab|EndWindingInductance_Lab]]'
+- '[[motorcad/parameter_database/parameters/SyncPoleArc|SyncPoleArc]]'
+- '[[motorcad/parameter_database/parameters/Sync_L_Separator_Radius|Sync_L_Separator_Radius]]'
+- '[[motorcad/parameter_database/parameters/Sync_L_Separator_Embed|Sync_L_Separator_Embed]]'
+- '[[motorcad/parameter_database/parameters/Sync_L_Separator_Width|Sync_L_Separator_Width]]'
+- '[[motorcad/parameter_database/parameters/Sync_Parallel_Tooth_Radial_Depth|Sync_Parallel_Tooth_Radial_Depth]]'
+related_workflows: []
+related_concepts: []
+confidence: Verified
+---
+
+# Sync_ModelSkewMethod_Lab
+
+## Summary
+Method used to calculate skew for Sync motors during Lab model build
+
+## Description
+Method used to calculate skew for Sync motors during Lab model build
+
+## Metadata
+- **Input/Output**: compatibility
+- **Category**: [[motorcad/parameter_database/categories/ModelParameters_MotorLAB|ModelParameters_MotorLAB]]
+- **Units**: N/A
+- **Default Value**: 1
+- **Data Type**: [[motorcad/parameter_database/data_types/integer|integer]]
+
+## Search Keywords
+- `Sync_ModelSkewMethod_Lab`
+- `Sync Model Skew Method Lab`
+- `sync_model_skew_method_lab`
+- `syncModelSkewMethodLab`
+- `sync_modelskewmethod_lab`
+- `ModelParameters_MotorLAB`
+- `integer`
+- `method`
+- `used`
+- `calculate`
+- `skew`
+- `for`
+- `sync`
+- `motors`
+- `during`
+- `lab`
+- `model`
+
+## Related Parameters
+- [[motorcad/parameter_database/parameters/PsiQ_coeff_MotorLAB|PsiQ_coeff_MotorLAB]]
+- [[motorcad/parameter_database/parameters/PsiD_coeff_MotorLAB|PsiD_coeff_MotorLAB]]
+- [[motorcad/parameter_database/parameters/EndWindingResistance_Lab|EndWindingResistance_Lab]]
+- [[motorcad/parameter_database/parameters/EndWindingResistance_Field_Lab|EndWindingResistance_Field_Lab]]
+- [[motorcad/parameter_database/parameters/EndWindingInductance_Lab|EndWindingInductance_Lab]]
+- [[motorcad/parameter_database/parameters/SyncPoleArc|SyncPoleArc]]
+- [[motorcad/parameter_database/parameters/Sync_L_Separator_Radius|Sync_L_Separator_Radius]]
+- [[motorcad/parameter_database/parameters/Sync_L_Separator_Embed|Sync_L_Separator_Embed]]
+- [[motorcad/parameter_database/parameters/Sync_L_Separator_Width|Sync_L_Separator_Width]]
+- [[motorcad/parameter_database/parameters/Sync_Parallel_Tooth_Radial_Depth|Sync_Parallel_Tooth_Radial_Depth]]
+
+## Related Wiki Pages
+No direct engineering concept page linked.
+
+## Source
+Original CSV / Excel: `D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx`

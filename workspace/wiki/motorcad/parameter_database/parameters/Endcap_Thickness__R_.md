@@ -1,0 +1,80 @@
+---
+type: motorcad_parameter
+parameter_name: Endcap_Thickness_[R]
+category: Dimensions
+input_output: i/p
+data_type: double
+units: mm
+default_value: '5'
+source_file: D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx
+aliases:
+- Endcap_Thickness_[R]
+- Endcap_Thickness_(R)
+- Endcap Thickness R
+- endcap_thickness_r
+- endcapThicknessR
+- endcap_thickness_[r]
+related_parameters:
+- '[[motorcad/parameter_database/parameters/DamperBar_Number|DamperBar_Number]]'
+- '[[motorcad/parameter_database/parameters/DamperBar_Depth|DamperBar_Depth]]'
+- '[[motorcad/parameter_database/parameters/DamperBar_Opening|DamperBar_Opening]]'
+- '[[motorcad/parameter_database/parameters/DamperBar_Diameter|DamperBar_Diameter]]'
+- '[[motorcad/parameter_database/parameters/DamperBar_Pitch|DamperBar_Pitch]]'
+- '[[motorcad/parameter_database/parameters/Endcap_Length__F_|Endcap_Length_(F)]]'
+- '[[motorcad/parameter_database/parameters/Endcap_Length__R_|Endcap_Length_(R)]]'
+- '[[motorcad/parameter_database/parameters/Endcap_Thickness__F_|Endcap_Thickness_(F)]]'
+- '[[motorcad/parameter_database/parameters/Endcap_-_Encoder|Endcap_-_Encoder]]'
+- '[[motorcad/parameter_database/parameters/Endcap_-_Axle__F_|Endcap_-_Axle_(F)]]'
+related_workflows: []
+related_concepts: []
+confidence: Verified
+---
+
+# Endcap_Thickness_[R]
+
+## Summary
+Endcap Material Thickness [Non-Drive End]
+
+## Description
+Endcap Material Thickness [Non-Drive End]
+
+## Metadata
+- **Input/Output**: i/p
+- **Category**: [[motorcad/parameter_database/categories/Dimensions|Dimensions]]
+- **Units**: mm
+- **Default Value**: 5
+- **Data Type**: [[motorcad/parameter_database/data_types/double|double]]
+
+## Search Keywords
+- `Endcap_Thickness_[R]`
+- `Endcap_Thickness_(R)`
+- `Endcap Thickness R`
+- `endcap_thickness_r`
+- `endcapThicknessR`
+- `endcap_thickness_[r]`
+- `Dimensions`
+- `double`
+- `endcap`
+- `material`
+- `thickness`
+- `non`
+- `drive`
+- `end`
+
+## Related Parameters
+- [[motorcad/parameter_database/parameters/DamperBar_Number|DamperBar_Number]]
+- [[motorcad/parameter_database/parameters/DamperBar_Depth|DamperBar_Depth]]
+- [[motorcad/parameter_database/parameters/DamperBar_Opening|DamperBar_Opening]]
+- [[motorcad/parameter_database/parameters/DamperBar_Diameter|DamperBar_Diameter]]
+- [[motorcad/parameter_database/parameters/DamperBar_Pitch|DamperBar_Pitch]]
+- [[motorcad/parameter_database/parameters/Endcap_Length__F_|Endcap_Length_(F)]]
+- [[motorcad/parameter_database/parameters/Endcap_Length__R_|Endcap_Length_(R)]]
+- [[motorcad/parameter_database/parameters/Endcap_Thickness__F_|Endcap_Thickness_(F)]]
+- [[motorcad/parameter_database/parameters/Endcap_-_Encoder|Endcap_-_Encoder]]
+- [[motorcad/parameter_database/parameters/Endcap_-_Axle__F_|Endcap_-_Axle_(F)]]
+
+## Related Wiki Pages
+No direct engineering concept page linked.
+
+## Source
+Original CSV / Excel: `D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx`

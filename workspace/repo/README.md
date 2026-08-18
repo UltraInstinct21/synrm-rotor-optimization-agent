@@ -1,11 +1,14 @@
 # workspace/repo
 
-This directory is where the codebase-under-analysis lives.
+This directory provides the local codebase context for `motor-deepagent`.
 
-For the motor-deepagent project, the local codebase is this project itself.
 The agent works on the `src/` and `apps/` directories directly.
 
-For motor-design workflows, reference files are at:
-- `D:\SRM\Agent\SynRM_45kW_IE5.mot` — reference motor model
-- `D:\SRM\Agent\optimize_synrm_v4.py` — existing optimization script
-- `D:\SRM\Motor _CAD\ScriptFiles\` — broader motor design workspace
+---
+
+## Motor CAD Model References
+
+Key design models and reference files:
+- `D:\SRM\Agent\SynRM_45kW_IE5.mot` — Primary 45 kW SynRM reference motor model
+- `D:\SRM\Agent\AGENTS.md` — Target specification, locked stator/winding parameters, and rotor optimization search space
+- `D:\SRM\Agent\workspace\wiki\motorcad\` — PyMotorCAD function guidelines and parameter database

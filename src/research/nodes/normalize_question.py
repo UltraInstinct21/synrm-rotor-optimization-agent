@@ -14,15 +14,20 @@ def normalize_question(state: ResearchState) -> dict:
 
     from langchain_core.messages import SystemMessage, HumanMessage
 
-    response = llm.invoke([
-        SystemMessage(content=NORMALIZE_QUESTION),
-        HumanMessage(content=f"Research question: {state['question']}"),
-    ])
-
-    parsed = NormalizedQuestion.model_validate_json(response.content or "{}")
-
-    return {
-        "normalized_question": parsed.normalized_question,
-        "domain_terms": parsed.domain_terms,
-        "messages": [f"Normalized: {parsed.normalized_question}"],
-    }
+    try:
+        response = llm.invoke([
+            SystemMessage(content=NORMALIZE_QUESTION),
+            HumanMessage(content=f"Research question: {state['question']}"),
+        ])
+        parsed = NormalizedQuestion.model_validate_json(response.content or "{}")
+        return {
+            "normalized_question": parsed.normalized_question,
+            "domain_terms": parsed.domain_terms,
+            "messages": [f"Normalized: {parsed.normalized_question}"],
+        }
+    except Exception as e:
+        return {
+            "normalized_question": state["question"],
+            "domain_terms": [],
+            "messages": [f"Normalization failed, using original question: {e}"],
+        }

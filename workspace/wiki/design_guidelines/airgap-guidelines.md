@@ -236,6 +236,7 @@ Where:
 
 ## Related Pages
 
+- [[motorcad/parameter_database/parameters/Airgap|Motor-CAD Parameter: Airgap]]
 - [[sizing-equation]] — fundamental torque-volume relationship
 - [[synrm-topology]] — overall SynRM design
 - [[saliency-ratio]] — how airgap affects saliency

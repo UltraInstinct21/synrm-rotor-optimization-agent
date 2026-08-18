@@ -1,0 +1,70 @@
+---
+type: motorcad_parameter
+parameter_name: Units_Cp
+category: Units
+input_output: i/p
+data_type: integer
+units: N/A
+default_value: N/A
+source_file: D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx
+aliases:
+- Units_Cp
+- Units Cp
+- units_cp
+- unitsCp
+related_parameters:
+- '[[motorcad/parameter_database/parameters/Units_Length|Units_Length]]'
+- '[[motorcad/parameter_database/parameters/Units_Conductivity|Units_Conductivity]]'
+- '[[motorcad/parameter_database/parameters/Units_Density|Units_Density]]'
+- '[[motorcad/parameter_database/parameters/Units_Dynamic_Viscosity|Units_Dynamic_Viscosity]]'
+- '[[motorcad/parameter_database/parameters/Units_Kinematic_Viscosity|Units_Kinematic_Viscosity]]'
+- '[[motorcad/parameter_database/parameters/Units_Weight|Units_Weight]]'
+- '[[motorcad/parameter_database/parameters/Units_Temperature|Units_Temperature]]'
+- '[[motorcad/parameter_database/parameters/Units_Heat_Transfer_Coefficient|Units_Heat_Transfer_Coefficient]]'
+- '[[motorcad/parameter_database/parameters/Units_Thermal_Resistance|Units_Thermal_Resistance]]'
+- '[[motorcad/parameter_database/parameters/Units_Thermal_Capacitance|Units_Thermal_Capacitance]]'
+related_workflows: []
+related_concepts: []
+confidence: Verified
+---
+
+# Units_Cp
+
+## Summary
+0 = J_per_kg_C,    1 = kJ_per_kg_C,    2 = Btu_per_lbm_F,    3 = cal_per_g_C
+
+## Description
+0 = J_per_kg_C,    1 = kJ_per_kg_C,    2 = Btu_per_lbm_F,    3 = cal_per_g_C
+
+## Metadata
+- **Input/Output**: i/p
+- **Category**: [[motorcad/parameter_database/categories/Units|Units]]
+- **Units**: N/A
+- **Default Value**: N/A
+- **Data Type**: [[motorcad/parameter_database/data_types/integer|integer]]
+
+## Search Keywords
+- `Units_Cp`
+- `Units Cp`
+- `units_cp`
+- `unitsCp`
+- `Units`
+- `integer`
+
+## Related Parameters
+- [[motorcad/parameter_database/parameters/Units_Length|Units_Length]]
+- [[motorcad/parameter_database/parameters/Units_Conductivity|Units_Conductivity]]
+- [[motorcad/parameter_database/parameters/Units_Density|Units_Density]]
+- [[motorcad/parameter_database/parameters/Units_Dynamic_Viscosity|Units_Dynamic_Viscosity]]
+- [[motorcad/parameter_database/parameters/Units_Kinematic_Viscosity|Units_Kinematic_Viscosity]]
+- [[motorcad/parameter_database/parameters/Units_Weight|Units_Weight]]
+- [[motorcad/parameter_database/parameters/Units_Temperature|Units_Temperature]]
+- [[motorcad/parameter_database/parameters/Units_Heat_Transfer_Coefficient|Units_Heat_Transfer_Coefficient]]
+- [[motorcad/parameter_database/parameters/Units_Thermal_Resistance|Units_Thermal_Resistance]]
+- [[motorcad/parameter_database/parameters/Units_Thermal_Capacitance|Units_Thermal_Capacitance]]
+
+## Related Wiki Pages
+No direct engineering concept page linked.
+
+## Source
+Original CSV / Excel: `D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx`

@@ -1,0 +1,81 @@
+---
+type: motorcad_parameter
+parameter_name: FEAMinPointSeparation
+category: FEA_Settings
+input_output: i/p
+data_type: double
+units: mm
+default_value: '0.005'
+source_file: D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx
+aliases:
+- FEAMinPointSeparation
+- FEA Min Point Separation
+- fea_min_point_separation
+- feaMinPointSeparation
+- feaminpointseparation
+related_parameters:
+- '[[motorcad/parameter_database/parameters/FE_Version|FE_Version]]'
+- '[[motorcad/parameter_database/parameters/FE_Location|FE_Location]]'
+- '[[motorcad/parameter_database/parameters/FEAMaxWindingTemp|FEAMaxWindingTemp]]'
+- '[[motorcad/parameter_database/parameters/FEAMinWindingTemp|FEAMinWindingTemp]]'
+- '[[motorcad/parameter_database/parameters/FEAAvWindingTemp|FEAAvWindingTemp]]'
+- '[[motorcad/parameter_database/parameters/FEAMaxMagnetTemp|FEAMaxMagnetTemp]]'
+- '[[motorcad/parameter_database/parameters/FEAMinMagnetTemp|FEAMinMagnetTemp]]'
+- '[[motorcad/parameter_database/parameters/FEAMaxRotorBarTemp|FEAMaxRotorBarTemp]]'
+- '[[motorcad/parameter_database/parameters/FEAMinRotorBarTemp|FEAMinRotorBarTemp]]'
+- '[[motorcad/parameter_database/parameters/FEAMaxAngle|FEAMaxAngle]]'
+related_workflows: []
+related_concepts: []
+confidence: Verified
+---
+
+# FEAMinPointSeparation
+
+## Summary
+Specifies the minimum distance for FEA geometry point separation
+
+## Description
+Specifies the minimum distance for FEA geometry point separation
+
+## Metadata
+- **Input/Output**: i/p
+- **Category**: [[motorcad/parameter_database/categories/FEA_Settings|FEA_Settings]]
+- **Units**: mm
+- **Default Value**: 0.005
+- **Data Type**: [[motorcad/parameter_database/data_types/double|double]]
+
+## Search Keywords
+- `FEAMinPointSeparation`
+- `FEA Min Point Separation`
+- `fea_min_point_separation`
+- `feaMinPointSeparation`
+- `feaminpointseparation`
+- `FEA_Settings`
+- `double`
+- `specifies`
+- `the`
+- `minimum`
+- `distance`
+- `for`
+- `fea`
+- `geometry`
+- `point`
+- `separation`
+
+## Related Parameters
+- [[motorcad/parameter_database/parameters/FE_Version|FE_Version]]
+- [[motorcad/parameter_database/parameters/FE_Location|FE_Location]]
+- [[motorcad/parameter_database/parameters/FEAMaxWindingTemp|FEAMaxWindingTemp]]
+- [[motorcad/parameter_database/parameters/FEAMinWindingTemp|FEAMinWindingTemp]]
+- [[motorcad/parameter_database/parameters/FEAAvWindingTemp|FEAAvWindingTemp]]
+- [[motorcad/parameter_database/parameters/FEAMaxMagnetTemp|FEAMaxMagnetTemp]]
+- [[motorcad/parameter_database/parameters/FEAMinMagnetTemp|FEAMinMagnetTemp]]
+- [[motorcad/parameter_database/parameters/FEAMaxRotorBarTemp|FEAMaxRotorBarTemp]]
+- [[motorcad/parameter_database/parameters/FEAMinRotorBarTemp|FEAMinRotorBarTemp]]
+- [[motorcad/parameter_database/parameters/FEAMaxAngle|FEAMaxAngle]]
+
+## Related Wiki Pages
+No direct engineering concept page linked.
+
+## Source
+Original CSV / Excel: `D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx`

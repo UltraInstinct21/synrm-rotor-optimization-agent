@@ -1,0 +1,81 @@
+---
+type: motorcad_parameter
+parameter_name: Spray_RadialHousing_ThermalConductivity_R
+category: EWdg_Spray_Cooling
+input_output: i/p
+data_type: double
+units: W/m/°C
+default_value: '0.125'
+source_file: D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx
+aliases:
+- Spray_RadialHousing_ThermalConductivity_R
+- Spray Radial Housing Thermal Conductivity R
+- spray_radial_housing_thermal_conductivity_r
+- sprayRadialHousingThermalConductivityR
+- spray_radialhousing_thermalconductivity_r
+related_parameters:
+- '[[motorcad/parameter_database/parameters/Spray_RadialHousing|Spray_RadialHousing]]'
+- '[[motorcad/parameter_database/parameters/Spray_RadialRotor|Spray_RadialRotor]]'
+- '[[motorcad/parameter_database/parameters/Spray_AxialEndcap|Spray_AxialEndcap]]'
+- '[[motorcad/parameter_database/parameters/Nozzles_EWdg_Outer_F|Nozzles_EWdg_Outer_F]]'
+- '[[motorcad/parameter_database/parameters/NozzleDia_EWdg_Outer_F|NozzleDia_EWdg_Outer_F]]'
+- '[[motorcad/parameter_database/parameters/Spray_Volumetric_Expansion_Coef|Spray_Volumetric_Expansion_Coef]]'
+- '[[motorcad/parameter_database/parameters/Spray_Area_EWdg_Outer_F|Spray_Area_EWdg_Outer_F]]'
+- '[[motorcad/parameter_database/parameters/Spray_Area_EWdg_Front_F|Spray_Area_EWdg_Front_F]]'
+- '[[motorcad/parameter_database/parameters/Spray_Area_EWdg_Inner_F|Spray_Area_EWdg_Inner_F]]'
+- '[[motorcad/parameter_database/parameters/Spray_Area_EWdg_Rear_F|Spray_Area_EWdg_Rear_F]]'
+related_workflows: []
+related_concepts: []
+confidence: Verified
+---
+
+# Spray_RadialHousing_ThermalConductivity_R
+
+## Summary
+Spray Cooling (Radial from Housing) Rear fluid thermal conductivity
+
+## Description
+Spray Cooling (Radial from Housing) Rear fluid thermal conductivity
+
+## Metadata
+- **Input/Output**: i/p
+- **Category**: [[motorcad/parameter_database/categories/EWdg_Spray_Cooling|EWdg_Spray_Cooling]]
+- **Units**: W/m/°C
+- **Default Value**: 0.125
+- **Data Type**: [[motorcad/parameter_database/data_types/double|double]]
+
+## Search Keywords
+- `Spray_RadialHousing_ThermalConductivity_R`
+- `Spray Radial Housing Thermal Conductivity R`
+- `spray_radial_housing_thermal_conductivity_r`
+- `sprayRadialHousingThermalConductivityR`
+- `spray_radialhousing_thermalconductivity_r`
+- `EWdg_Spray_Cooling`
+- `double`
+- `spray`
+- `cooling`
+- `radial`
+- `from`
+- `housing`
+- `rear`
+- `fluid`
+- `thermal`
+- `conductivity`
+
+## Related Parameters
+- [[motorcad/parameter_database/parameters/Spray_RadialHousing|Spray_RadialHousing]]
+- [[motorcad/parameter_database/parameters/Spray_RadialRotor|Spray_RadialRotor]]
+- [[motorcad/parameter_database/parameters/Spray_AxialEndcap|Spray_AxialEndcap]]
+- [[motorcad/parameter_database/parameters/Nozzles_EWdg_Outer_F|Nozzles_EWdg_Outer_F]]
+- [[motorcad/parameter_database/parameters/NozzleDia_EWdg_Outer_F|NozzleDia_EWdg_Outer_F]]
+- [[motorcad/parameter_database/parameters/Spray_Volumetric_Expansion_Coef|Spray_Volumetric_Expansion_Coef]]
+- [[motorcad/parameter_database/parameters/Spray_Area_EWdg_Outer_F|Spray_Area_EWdg_Outer_F]]
+- [[motorcad/parameter_database/parameters/Spray_Area_EWdg_Front_F|Spray_Area_EWdg_Front_F]]
+- [[motorcad/parameter_database/parameters/Spray_Area_EWdg_Inner_F|Spray_Area_EWdg_Inner_F]]
+- [[motorcad/parameter_database/parameters/Spray_Area_EWdg_Rear_F|Spray_Area_EWdg_Rear_F]]
+
+## Related Wiki Pages
+- [[motorcad/pymotorcad-thermal-steady-state|PyMotorCAD Thermal Steady State]]
+
+## Source
+Original CSV / Excel: `D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx`

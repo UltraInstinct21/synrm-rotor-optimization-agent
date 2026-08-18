@@ -1,0 +1,77 @@
+---
+type: motorcad_parameter
+parameter_name: Copper_Diameter_2
+category: Winding_Design
+input_output: i/p
+data_type: double
+units: mm
+default_value: '0.65'
+source_file: D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx
+aliases:
+- Copper_Diameter_2
+- Copper Diameter 2
+- copper_diameter_2
+- copperDiameter2
+related_parameters:
+- '[[motorcad/parameter_database/parameters/NoMushConductorsDrawn|NoMushConductorsDrawn]]'
+- '[[motorcad/parameter_database/parameters/ConductorsSlotBase|ConductorsSlotBase]]'
+- '[[motorcad/parameter_database/parameters/ConductorsSlotTooth|ConductorsSlotTooth]]'
+- '[[motorcad/parameter_database/parameters/ConductorsVertical|ConductorsVertical]]'
+- '[[motorcad/parameter_database/parameters/ConductorsHorizontal|ConductorsHorizontal]]'
+- '[[motorcad/parameter_database/parameters/Copper_Width|Copper_Width]]'
+- '[[motorcad/parameter_database/parameters/Copper_Width_2|Copper_Width_2]]'
+- '[[motorcad/parameter_database/parameters/Copper_Width_3|Copper_Width_3]]'
+- '[[motorcad/parameter_database/parameters/Copper_Height|Copper_Height]]'
+- '[[motorcad/parameter_database/parameters/Copper_Height_2|Copper_Height_2]]'
+related_workflows: []
+related_concepts: []
+confidence: Verified
+---
+
+# Copper_Diameter_2
+
+## Summary
+Uncovered wire (copper) diameter of the second wire size
+
+## Description
+Uncovered wire (copper) diameter of the second wire size
+
+## Metadata
+- **Input/Output**: i/p
+- **Category**: [[motorcad/parameter_database/categories/Winding_Design|Winding_Design]]
+- **Units**: mm
+- **Default Value**: 0.65
+- **Data Type**: [[motorcad/parameter_database/data_types/double|double]]
+
+## Search Keywords
+- `Copper_Diameter_2`
+- `Copper Diameter 2`
+- `copper_diameter_2`
+- `copperDiameter2`
+- `Winding_Design`
+- `double`
+- `uncovered`
+- `wire`
+- `copper`
+- `diameter`
+- `the`
+- `second`
+- `size`
+
+## Related Parameters
+- [[motorcad/parameter_database/parameters/NoMushConductorsDrawn|NoMushConductorsDrawn]]
+- [[motorcad/parameter_database/parameters/ConductorsSlotBase|ConductorsSlotBase]]
+- [[motorcad/parameter_database/parameters/ConductorsSlotTooth|ConductorsSlotTooth]]
+- [[motorcad/parameter_database/parameters/ConductorsVertical|ConductorsVertical]]
+- [[motorcad/parameter_database/parameters/ConductorsHorizontal|ConductorsHorizontal]]
+- [[motorcad/parameter_database/parameters/Copper_Width|Copper_Width]]
+- [[motorcad/parameter_database/parameters/Copper_Width_2|Copper_Width_2]]
+- [[motorcad/parameter_database/parameters/Copper_Width_3|Copper_Width_3]]
+- [[motorcad/parameter_database/parameters/Copper_Height|Copper_Height]]
+- [[motorcad/parameter_database/parameters/Copper_Height_2|Copper_Height_2]]
+
+## Related Wiki Pages
+No direct engineering concept page linked.
+
+## Source
+Original CSV / Excel: `D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx`

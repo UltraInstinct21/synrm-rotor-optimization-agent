@@ -1,0 +1,74 @@
+---
+type: motorcad_parameter
+parameter_name: Area_[ESpace]_-_Wafters_[Rear]
+category: End_Space
+input_output: o/p
+data_type: double
+units: mm²
+default_value: N/A
+source_file: D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx
+aliases:
+- Area_[ESpace]_-_Wafters_[Rear]
+- Area_(ESpace)_-_Wafters_(Rear)
+- Area E Space Wafters Rear
+- area_e_space_wafters_rear
+- areaESpaceWaftersRear
+- area_[espace]_-_wafters_[rear]
+related_parameters:
+- '[[motorcad/parameter_database/parameters/K1_ES_EndRing_Bore_F|K1_ES_EndRing_Bore_F]]'
+- '[[motorcad/parameter_database/parameters/K2_ES_EndRing_Bore_F|K2_ES_EndRing_Bore_F]]'
+- '[[motorcad/parameter_database/parameters/K3_ES_EndRing_Bore_F|K3_ES_EndRing_Bore_F]]'
+- '[[motorcad/parameter_database/parameters/Vel_Mult_ES_EndRing_Bore_F|Vel_Mult_ES_EndRing_Bore_F]]'
+- '[[motorcad/parameter_database/parameters/Vel_ES_EndRing_Bore_F|Vel_ES_EndRing_Bore_F]]'
+- '[[motorcad/parameter_database/parameters/Area_Airgap_Cup_Endcap_Inner_Surface|Area_Airgap_Cup_Endcap_Inner_Surface]]'
+- '[[motorcad/parameter_database/parameters/Area_Airgap_Cup_Endcap_Outer_Surface|Area_Airgap_Cup_Endcap_Outer_Surface]]'
+- '[[motorcad/parameter_database/parameters/Area_ES_EndRing_Bore_F|Area_ES_EndRing_Bore_F]]'
+- '[[motorcad/parameter_database/parameters/Area_ES_EndRing_Outer_F|Area_ES_EndRing_Outer_F]]'
+- '[[motorcad/parameter_database/parameters/Area_ES_EndRing_End_F|Area_ES_EndRing_End_F]]'
+related_workflows: []
+related_concepts: []
+confidence: Verified
+---
+
+# Area_[ESpace]_-_Wafters_[Rear]
+
+## Summary
+Motor-CAD automation parameter `Area_[ESpace]_-_Wafters_[Rear]` in category `End_Space`.
+
+## Description
+No description provided in the source database.
+
+## Metadata
+- **Input/Output**: o/p
+- **Category**: [[motorcad/parameter_database/categories/End_Space|End_Space]]
+- **Units**: mm²
+- **Default Value**: N/A
+- **Data Type**: [[motorcad/parameter_database/data_types/double|double]]
+
+## Search Keywords
+- `Area_[ESpace]_-_Wafters_[Rear]`
+- `Area_(ESpace)_-_Wafters_(Rear)`
+- `Area E Space Wafters Rear`
+- `area_e_space_wafters_rear`
+- `areaESpaceWaftersRear`
+- `area_[espace]_-_wafters_[rear]`
+- `End_Space`
+- `double`
+
+## Related Parameters
+- [[motorcad/parameter_database/parameters/K1_ES_EndRing_Bore_F|K1_ES_EndRing_Bore_F]]
+- [[motorcad/parameter_database/parameters/K2_ES_EndRing_Bore_F|K2_ES_EndRing_Bore_F]]
+- [[motorcad/parameter_database/parameters/K3_ES_EndRing_Bore_F|K3_ES_EndRing_Bore_F]]
+- [[motorcad/parameter_database/parameters/Vel_Mult_ES_EndRing_Bore_F|Vel_Mult_ES_EndRing_Bore_F]]
+- [[motorcad/parameter_database/parameters/Vel_ES_EndRing_Bore_F|Vel_ES_EndRing_Bore_F]]
+- [[motorcad/parameter_database/parameters/Area_Airgap_Cup_Endcap_Inner_Surface|Area_Airgap_Cup_Endcap_Inner_Surface]]
+- [[motorcad/parameter_database/parameters/Area_Airgap_Cup_Endcap_Outer_Surface|Area_Airgap_Cup_Endcap_Outer_Surface]]
+- [[motorcad/parameter_database/parameters/Area_ES_EndRing_Bore_F|Area_ES_EndRing_Bore_F]]
+- [[motorcad/parameter_database/parameters/Area_ES_EndRing_Outer_F|Area_ES_EndRing_Outer_F]]
+- [[motorcad/parameter_database/parameters/Area_ES_EndRing_End_F|Area_ES_EndRing_End_F]]
+
+## Related Wiki Pages
+No direct engineering concept page linked.
+
+## Source
+Original CSV / Excel: `D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx`

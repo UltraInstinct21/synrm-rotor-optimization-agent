@@ -1,0 +1,69 @@
+---
+type: motorcad_parameter
+parameter_name: CoilsPerPath_Array
+category: Magnetics
+input_output: i/p
+data_type: integer
+units: N/A
+default_value: '6'
+source_file: D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx
+aliases:
+- CoilsPerPath_Array
+- Coils Per Path Array
+- coils_per_path_array
+- coilsPerPathArray
+- coilsperpath_array
+related_parameters:
+- '[[motorcad/parameter_database/parameters/NumLoadPoints|NumLoadPoints]]'
+- '[[motorcad/parameter_database/parameters/LoadPoint_Current_Array|LoadPoint_Current_Array]]'
+- '[[motorcad/parameter_database/parameters/LoadPoint_PhaseAdvance_Array|LoadPoint_PhaseAdvance_Array]]'
+- '[[motorcad/parameter_database/parameters/LoadPoint_Torque_Array|LoadPoint_Torque_Array]]'
+- '[[motorcad/parameter_database/parameters/LoadPoint_Calculated_Torque_Array|LoadPoint_Calculated_Torque_Array]]'
+related_workflows: []
+related_concepts: []
+confidence: Verified
+---
+
+# CoilsPerPath_Array
+
+## Summary
+The number of coils per path in each phase
+
+## Description
+The number of coils per path in each phase
+
+## Metadata
+- **Input/Output**: i/p
+- **Category**: [[motorcad/parameter_database/categories/Magnetics|Magnetics]]
+- **Units**: N/A
+- **Default Value**: 6
+- **Data Type**: [[motorcad/parameter_database/data_types/integer|integer]]
+
+## Search Keywords
+- `CoilsPerPath_Array`
+- `Coils Per Path Array`
+- `coils_per_path_array`
+- `coilsPerPathArray`
+- `coilsperpath_array`
+- `Magnetics`
+- `integer`
+- `the`
+- `number`
+- `coils`
+- `per`
+- `path`
+- `each`
+- `phase`
+
+## Related Parameters
+- [[motorcad/parameter_database/parameters/NumLoadPoints|NumLoadPoints]]
+- [[motorcad/parameter_database/parameters/LoadPoint_Current_Array|LoadPoint_Current_Array]]
+- [[motorcad/parameter_database/parameters/LoadPoint_PhaseAdvance_Array|LoadPoint_PhaseAdvance_Array]]
+- [[motorcad/parameter_database/parameters/LoadPoint_Torque_Array|LoadPoint_Torque_Array]]
+- [[motorcad/parameter_database/parameters/LoadPoint_Calculated_Torque_Array|LoadPoint_Calculated_Torque_Array]]
+
+## Related Wiki Pages
+No direct engineering concept page linked.
+
+## Source
+Original CSV / Excel: `D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx`

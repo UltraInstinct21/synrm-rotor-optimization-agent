@@ -90,12 +90,3 @@ class ReportOutput(BaseModel):
 REPORT_SCHEMA: dict = ReportOutput.model_json_schema()
 
 
-# ── Map: schema name → (model, schema-dict) ───────────────────────────
-
-SCHEMA_REGISTRY: dict[str, tuple[type[BaseModel], dict]] = {
-    "normalize": (NormalizedQuestion, NORMALIZE_SCHEMA),
-    "selection": (SourceSelection, SELECTION_SCHEMA),
-    "extraction": (Extraction, EXTRACTION_SCHEMA),
-    "synthesis": (Synthesis, SYNTHESIS_SCHEMA),
-    "report": (ReportOutput, REPORT_SCHEMA),
-}

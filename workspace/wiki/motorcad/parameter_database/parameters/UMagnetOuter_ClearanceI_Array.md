@@ -1,0 +1,72 @@
+---
+type: motorcad_parameter
+parameter_name: UMagnetOuter_ClearanceI_Array
+category: Dimensions
+input_output: i/p
+data_type: double
+units: mm
+default_value: '0'
+source_file: D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx
+aliases:
+- UMagnetOuter_ClearanceI_Array
+- U Magnet Outer Clearance I Array
+- u_magnet_outer_clearance_i_array
+- uMagnetOuterClearanceIArray
+- umagnetouter_clearancei_array
+related_parameters:
+- '[[motorcad/parameter_database/parameters/DamperBar_Number|DamperBar_Number]]'
+- '[[motorcad/parameter_database/parameters/DamperBar_Depth|DamperBar_Depth]]'
+- '[[motorcad/parameter_database/parameters/DamperBar_Opening|DamperBar_Opening]]'
+- '[[motorcad/parameter_database/parameters/DamperBar_Diameter|DamperBar_Diameter]]'
+- '[[motorcad/parameter_database/parameters/DamperBar_Pitch|DamperBar_Pitch]]'
+- '[[motorcad/parameter_database/parameters/UMagnetOuter_ClearanceO_Array|UMagnetOuter_ClearanceO_Array]]'
+related_workflows: []
+related_concepts: []
+confidence: Verified
+---
+
+# UMagnetOuter_ClearanceI_Array
+
+## Summary
+The clearance of the U-Layer Outer magnet away from the magnet pole
+
+## Description
+The clearance of the U-Layer Outer magnet away from the magnet pole
+
+## Metadata
+- **Input/Output**: i/p
+- **Category**: [[motorcad/parameter_database/categories/Dimensions|Dimensions]]
+- **Units**: mm
+- **Default Value**: 0
+- **Data Type**: [[motorcad/parameter_database/data_types/double|double]]
+
+## Search Keywords
+- `UMagnetOuter_ClearanceI_Array`
+- `U Magnet Outer Clearance I Array`
+- `u_magnet_outer_clearance_i_array`
+- `uMagnetOuterClearanceIArray`
+- `umagnetouter_clearancei_array`
+- `Dimensions`
+- `double`
+- `the`
+- `clearance`
+- `layer`
+- `outer`
+- `magnet`
+- `away`
+- `from`
+- `pole`
+
+## Related Parameters
+- [[motorcad/parameter_database/parameters/DamperBar_Number|DamperBar_Number]]
+- [[motorcad/parameter_database/parameters/DamperBar_Depth|DamperBar_Depth]]
+- [[motorcad/parameter_database/parameters/DamperBar_Opening|DamperBar_Opening]]
+- [[motorcad/parameter_database/parameters/DamperBar_Diameter|DamperBar_Diameter]]
+- [[motorcad/parameter_database/parameters/DamperBar_Pitch|DamperBar_Pitch]]
+- [[motorcad/parameter_database/parameters/UMagnetOuter_ClearanceO_Array|UMagnetOuter_ClearanceO_Array]]
+
+## Related Wiki Pages
+No direct engineering concept page linked.
+
+## Source
+Original CSV / Excel: `D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx`

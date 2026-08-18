@@ -12,7 +12,6 @@ class ResearchState(TypedDict):
     normalized_question: str
     domain_terms: list[str]
     wiki_context: list[dict[str, str]]
-    local_docs_context: list[dict[str, str]]
     all_collected_sources: list[dict[str, str]]
     selected_sources: list[dict[str, str]]
     extracted_claims: list[str]
@@ -24,6 +23,7 @@ class ResearchState(TypedDict):
     report_confidence: str
     report: dict[str, Any]
     messages: list[str]
+    errors: list[str]
 
 
 def make_initial_state(question: str) -> ResearchState:
@@ -33,7 +33,6 @@ def make_initial_state(question: str) -> ResearchState:
         "normalized_question": "",
         "domain_terms": [],
         "wiki_context": [],
-        "local_docs_context": [],
         "all_collected_sources": [],
         "selected_sources": [],
         "extracted_claims": [],
@@ -45,4 +44,5 @@ def make_initial_state(question: str) -> ResearchState:
         "report_confidence": "medium",
         "report": {},
         "messages": [],
+        "errors": [],
     }

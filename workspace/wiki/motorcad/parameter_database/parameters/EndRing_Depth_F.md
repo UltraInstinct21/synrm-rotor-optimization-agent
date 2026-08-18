@@ -1,0 +1,76 @@
+---
+type: motorcad_parameter
+parameter_name: EndRing_Depth_F
+category: Dimensions
+input_output: o/p
+data_type: double
+units: mm
+default_value: '0'
+source_file: D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx
+aliases:
+- EndRing_Depth_F
+- End Ring Depth F
+- end_ring_depth_f
+- endRingDepthF
+- endring_depth_f
+related_parameters:
+- '[[motorcad/parameter_database/parameters/DamperBar_Number|DamperBar_Number]]'
+- '[[motorcad/parameter_database/parameters/DamperBar_Depth|DamperBar_Depth]]'
+- '[[motorcad/parameter_database/parameters/DamperBar_Opening|DamperBar_Opening]]'
+- '[[motorcad/parameter_database/parameters/DamperBar_Diameter|DamperBar_Diameter]]'
+- '[[motorcad/parameter_database/parameters/DamperBar_Pitch|DamperBar_Pitch]]'
+- '[[motorcad/parameter_database/parameters/EndRing_Thickness_F|EndRing_Thickness_F]]'
+- '[[motorcad/parameter_database/parameters/EndRing_Extension_F|EndRing_Extension_F]]'
+- '[[motorcad/parameter_database/parameters/EndRing_Inner_Add_F|EndRing_Inner_Add_F]]'
+- '[[motorcad/parameter_database/parameters/EndRing_Outer_Add_F|EndRing_Outer_Add_F]]'
+- '[[motorcad/parameter_database/parameters/EndRing_Thickness_R|EndRing_Thickness_R]]'
+related_workflows: []
+related_concepts: []
+confidence: Verified
+---
+
+# EndRing_Depth_F
+
+## Summary
+Depth of front end ring
+
+## Description
+Depth of front end ring
+
+## Metadata
+- **Input/Output**: o/p
+- **Category**: [[motorcad/parameter_database/categories/Dimensions|Dimensions]]
+- **Units**: mm
+- **Default Value**: 0
+- **Data Type**: [[motorcad/parameter_database/data_types/double|double]]
+
+## Search Keywords
+- `EndRing_Depth_F`
+- `End Ring Depth F`
+- `end_ring_depth_f`
+- `endRingDepthF`
+- `endring_depth_f`
+- `Dimensions`
+- `double`
+- `depth`
+- `front`
+- `end`
+- `ring`
+
+## Related Parameters
+- [[motorcad/parameter_database/parameters/DamperBar_Number|DamperBar_Number]]
+- [[motorcad/parameter_database/parameters/DamperBar_Depth|DamperBar_Depth]]
+- [[motorcad/parameter_database/parameters/DamperBar_Opening|DamperBar_Opening]]
+- [[motorcad/parameter_database/parameters/DamperBar_Diameter|DamperBar_Diameter]]
+- [[motorcad/parameter_database/parameters/DamperBar_Pitch|DamperBar_Pitch]]
+- [[motorcad/parameter_database/parameters/EndRing_Thickness_F|EndRing_Thickness_F]]
+- [[motorcad/parameter_database/parameters/EndRing_Extension_F|EndRing_Extension_F]]
+- [[motorcad/parameter_database/parameters/EndRing_Inner_Add_F|EndRing_Inner_Add_F]]
+- [[motorcad/parameter_database/parameters/EndRing_Outer_Add_F|EndRing_Outer_Add_F]]
+- [[motorcad/parameter_database/parameters/EndRing_Thickness_R|EndRing_Thickness_R]]
+
+## Related Wiki Pages
+No direct engineering concept page linked.
+
+## Source
+Original CSV / Excel: `D:/SRM/Agent/workspace/wiki/raw/ActiveXParameters.xlsx`
