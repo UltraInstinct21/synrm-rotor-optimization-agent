@@ -264,6 +264,32 @@ def build_agent(model: BaseChatModel | None = None, checkpointer=None):
     from src.tools.research import research_subgraph as _research
     from src.tools.wiki import wiki_tool as _wiki
 
+    # deepagents<0.7 has no FilesystemMiddleware(tools=[...]) subsetting
+    # (e.g. 0.6.12) — detect support and fall back to a write-deny rule so
+    # the explorer subagent stays read-only instead of crashing init.
+    import inspect as _inspect
+
+    _mw_kwargs: dict = {"backend": backend}
+    try:
+        _mw_params = _inspect.signature(FilesystemMiddleware.__init__).parameters
+    except Exception:
+        _mw_params = {}
+    if "tools" in _mw_params:
+        _mw_kwargs["tools"] = ["ls", "read_file", "glob", "grep"]
+    else:
+        try:
+            from deepagents.middleware.filesystem import FilesystemPermission
+
+            _mw_kwargs["_permissions"] = [
+                FilesystemPermission(operations=["write"], paths=["/"], mode="deny")
+            ]
+        except Exception:
+            pass
+    try:
+        _explore_middleware = [FilesystemMiddleware(**_mw_kwargs)]
+    except TypeError:
+        _explore_middleware = []
+
     _explore_llm = settings.get_llm(settings.MODEL_RESEARCH or settings.MODEL_DEFAULT)
     _motor_explore = {
         "name": "motor-explore",
@@ -276,7 +302,7 @@ def build_agent(model: BaseChatModel | None = None, checkpointer=None):
             "Spec.json wins over docs; never invent variable names."
         ),
         "tools": [_wiki, _research, _validate, _score],
-        "middleware": [FilesystemMiddleware(backend=backend, tools=["ls", "read_file", "glob", "grep"])],
+        "middleware": _explore_middleware,
         "model": _explore_llm,
     }
 
