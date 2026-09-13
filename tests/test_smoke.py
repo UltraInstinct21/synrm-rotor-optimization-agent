@@ -21,16 +21,28 @@ def test_config_import():
 
 
 def test_agent_factory():
-    """build_tools returns the streamlined custom tool list for DeepAgent."""
+    """build_tools returns the streamlined custom tool list for DeepAgent.
+
+    Todo tracking is deepagents' built-in write_todos (injected by middleware),
+    so no custom todo tool may appear here. The shell `execute` tool is also
+    excluded via the openai harness profile.
+    """
     from src.agent.factory import build_tools
 
     tools = build_tools()
     names = {t.name for t in tools}
     assert "execute_generated_motorcad_code" in names
+    assert "create_run_file" in names
+    assert "execute_run_file" in names
+    assert "validate_motor_params" in names
+    assert "score_motor_result" in names
     assert "research_subgraph" in names
     assert "tavily_search" in names
-    assert "write_todos" in names
-    assert "update_todo_status" in names
+    assert "wiki_tool" in names
+    assert "delete_file" in names
+    assert len(names) == 9
+    assert "write_todos" not in names
+    assert "update_todo_status" not in names
 
 
 def test_wiki_tool():

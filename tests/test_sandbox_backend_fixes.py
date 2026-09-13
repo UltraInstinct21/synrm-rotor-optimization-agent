@@ -1,37 +1,9 @@
-"""Tests for DeepAgent sandbox backend, filesystem tool mounting, code sanitization, and thread session recovery."""
+"""Tests for DeepAgent sandbox backend, filesystem tool mounting, and code sanitization."""
 
 from __future__ import annotations
 
-import json
-import threading
-from concurrent.futures import ThreadPoolExecutor
-from apps.cli.session import Session
-from src.tools.todo_tools import set_active_session, write_todos, update_todo_status
 from src.tools.execution import _sanitize_code_content, create_run_file
 from src.agent.factory import build_tools
-
-
-def test_todo_tools_thread_safety():
-    """Verify write_todos and update_todo_status work across worker threads."""
-    s = Session()
-    set_active_session(s)
-
-    def worker():
-        res = write_todos.invoke({"tasks": ["1. Task A", "2. Task B"]})
-        data = json.loads(res)
-        assert data["status"] == "success"
-        
-        res_upd = update_todo_status.invoke({"todo_id": "1", "status": "completed"})
-        data_upd = json.loads(res_upd)
-        assert data_upd["status"] == "success"
-
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        future = executor.submit(worker)
-        future.result()
-
-    todos = s.get_todos()
-    assert len(todos) == 2
-    assert todos[0]["status"] == "completed"
 
 
 def test_code_sanitization():

@@ -16,8 +16,38 @@ from apps.cli.display import (
     render_tool_end,
 )
 from apps.cli.theme import render_assistant_header
+from langchain_core.messages import HumanMessage
 from src.config import settings
-from src.tools.todo_tools import set_active_session
+
+
+def _build_config(session: Any) -> dict:
+    """LangGraph config with a stable thread_id so the checkpointer persists
+    tool results across turns (the agent stops re-searching/re-reading)."""
+    config: dict = {"configurable": {"thread_id": session.id}}
+    _limit = settings.get_recursion_limit()
+    if _limit is not None:
+        config["recursion_limit"] = _limit
+    return config
+
+
+def _sync_session_todos(session: Any, todos: Any) -> None:
+    """Mirror the agent's built-in todo state into the CLI session store."""
+    try:
+        items = []
+        for t in todos or []:
+            if isinstance(t, dict):
+                content, status = t.get("content"), t.get("status", "pending")
+            else:
+                content, status = getattr(t, "content", ""), getattr(t, "status", "pending")
+            if content:
+                items.append((str(content), str(status)))
+        if not items and not session.get_todos():
+            return
+        session.clear_todos()
+        for content, status in items:
+            session.add_todo(content, status=status)
+    except Exception:
+        pass
 
 
 async def _listen_keys(cli: Any, console: Console) -> None:
@@ -117,7 +147,6 @@ async def _astream(
     """Async stream loop — collects tokens, renders tool details with timing metrics, handles interrupts with session memory."""
     from rich.live import Live
 
-    set_active_session(session)
     collected: list[str] = []
     spinner = render_thinking_start(console)
     first_token = True
@@ -139,13 +168,15 @@ async def _astream(
     )
     live.start()
 
-    messages = [(m["role"], m["content"]) for m in session.messages]
+    # Checkpointed thread: send only the new query; prior turns (incl. tool
+    # results) are restored by the checkpointer via thread_id.
+    config = _build_config(session)
     key_listener = asyncio.create_task(_listen_keys(cli, live.console))
 
     try:
         async for event in agent.astream_events(
-            {"messages": messages},
-            config={"recursion_limit": settings.RECURSION_LIMIT},
+            {"messages": [HumanMessage(content=query)]},
+            config=config,
             version="v2",
         ):
             kind = event.get("event", "")
@@ -166,6 +197,9 @@ async def _astream(
                 t_name = event.get("name", "tool")
                 t_input = event.get("data", {}).get("input")
                 t_id = event.get("run_id", t_name)
+                if t_name == "write_todos" and isinstance(t_input, dict):
+                    # Built-in todo tool rewrites the whole list — mirror live.
+                    _sync_session_todos(session, t_input.get("todos"))
                 is_exp = get_is_expanded()
                 start_t = render_tool_start(live.console, t_name, tool_input=t_input, expanded=is_exp)
                 tool_start_times[t_id] = start_t
@@ -186,7 +220,7 @@ async def _astream(
                     expanded=is_exp,
                     start_time=start_t,
                 )
-                if t_name in ("write_todos", "update_todo_status") and session.get_todos():
+                if t_name == "write_todos" and session.get_todos():
                     todos_card = format_todos_panel(session.get_todos(), width=console.width - 4)
                     if todos_card:
                         live.console.print(f"  [bold cyan][TODO UPDATED mid-session][/bold cyan]\n{todos_card}\n")
@@ -223,6 +257,13 @@ async def _astream(
     # Stop spinner if still showing (e.g. model returned without chunks)
     if first_token:
         render_thinking_stop(spinner)
+
+    # Mirror final todo state from the checkpointer into the session store.
+    try:
+        state = await agent.aget_state(config)
+        _sync_session_todos(session, (state.values or {}).get("todos"))
+    except Exception:
+        pass
 
     # Render the full response as properly formatted markdown
     full_response = "".join(collected)
@@ -267,8 +308,7 @@ def stream_response(
     cli: Any = None,
 ) -> None:
     """Sync wrapper — runs the async stream in the event loop with interrupt preservation."""
-    set_active_session(session)
-    messages = [(m["role"], m["content"]) for m in session.messages]
+    config = _build_config(session)
 
     try:
         loop = asyncio.get_running_loop()
@@ -287,10 +327,11 @@ def stream_response(
                 refresh_per_second=4,
             ):
                 result = agent.invoke(
-                    {"messages": messages},
-                    config={"recursion_limit": settings.RECURSION_LIMIT},
+                    {"messages": [HumanMessage(content=query)]},
+                    config=config,
                 )
             content = result["messages"][-1].content
+            _sync_session_todos(session, result.get("todos"))
             render_assistant_header(console)
             console.print(render_markdown(content))
             session.add("assistant", content)
@@ -315,10 +356,11 @@ def stream_response(
                     refresh_per_second=4,
                 ):
                     result = agent.invoke(
-                        {"messages": messages},
-                        config={"recursion_limit": settings.RECURSION_LIMIT},
+                        {"messages": [HumanMessage(content=query)]},
+                        config=config,
                     )
                 content = result["messages"][-1].content
+                _sync_session_todos(session, result.get("todos"))
                 render_assistant_header(console)
                 console.print(render_markdown(content))
                 session.add("assistant", content)

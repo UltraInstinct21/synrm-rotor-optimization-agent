@@ -1,6 +1,6 @@
 {
   "dependencies": ["."],
   "graphs": {
-    "motor_agent": "./src/agent/factory.py:build_agent"
+    "motor_agent": "./src/agent/factory.py:agent_graph"
   }
 }

@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "motorcad/parameter_database/parameters/Natural_Convection_Correlation_Housing_Front_Fin_Sides.md",
+                "file": "architecture/orchestrator.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Natural_Convection_Correlation_Housing_Front_Fin_Sides"
+              "title": "orchestrator"
             }
           }
         ]
@@ -187,6 +187,12 @@
   },
   "active": "83b3cbdcf94eb87e",
   "lastOpenFiles": [
+    "concepts/flux-barriers.md",
+    "equations/inductance-equations.md",
+    "power-factor-eq.md",
+    "codebase_map.md",
+    "motorcad/parameter_database/parameters/Channel_Correlation_TVent_Housing_OHang_R.md",
+    "motorcad/parameter_database/parameters/Natural_Convection_Correlation_Housing_Front_Fin_Sides.md",
     "motorcad/parameter_database/parameters/h_Airgap_Cup_Housing_OH.md",
     "parameter_database/parameters/Area_Dissipation_SlotWJ_Slot_centre.md",
     "parameter_database/parameters/Area_Dissipation_SlotWJ_Slot_Bottom.md",
@@ -207,12 +213,6 @@
     "parameter_database/parameters/Area_Calc_ES_Stator_F.md",
     "parameter_database/parameters/Area_Calc_ES_StatorPlate_F.md",
     "parameter_database/parameters/Area_Calc_ES_StatorPlate_R.md",
-    "parameter_database/parameters/Area_Calc_ES_StatorClampPlate_R.md",
-    "parameter_database/parameters/Area_Calc_ES_StatorClampPlate_F.md",
-    "parameter_database/parameters/Area_Calc_ES_Sleeve_F.md",
-    "parameter_database/parameters/Area_Calc_ES_Sleeve_R.md",
-    "parameter_database/parameters/Area_Calc_ES_Shaft_R.md",
-    "parameter_database/parameters/Area_Calc_ES_Shaft_F.md",
     "parameter_database/parameters",
     "parameter_database/categories",
     "parameter_database"

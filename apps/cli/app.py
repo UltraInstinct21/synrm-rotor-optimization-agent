@@ -17,6 +17,22 @@ if TYPE_CHECKING:
 SESSION_DIR = Path.home() / ".motor-deepagent" / "sessions"
 
 
+def _sweep_old_scratch(max_age_days: int = 7) -> None:
+    """Delete generated sim scripts older than a week (best-effort)."""
+    import time
+
+    scratch = Path(__file__).resolve().parents[2] / "workspace" / "scratch"
+    if not scratch.is_dir():
+        return
+    cutoff = time.time() - max_age_days * 86400
+    for f in scratch.glob("*.py"):
+        try:
+            if f.stat().st_mtime < cutoff:
+                f.unlink()
+        except OSError:
+            pass
+
+
 class MotorCLI:
     """Chat-style CLI orchestrator."""
 
@@ -35,8 +51,48 @@ class MotorCLI:
         if self._agent is None:
             try:
                 from apps.cli.main import _build_agent
+                from src.config import settings
 
-                self._agent, self.tools = _build_agent()
+                # /model stores a NAME string; convert to an LLM client here so
+                # build_agent always receives BaseChatModel | None. Validate
+                # against the cached catalogue when warm (no network I/O here
+                # so the first query never blocks on model discovery); an
+                # empty cache means "not yet listed" — pass through and let
+                # the server decide.
+                name = (self.model_name or "").strip()
+                if not name or name == "default":
+                    model = None
+                else:
+                    cached = settings.peek_cached_models()
+                    resolved, suggestions = (
+                        settings.resolve_model_name(name, cached)
+                        if cached
+                        else (name, [])
+                    )
+                    if resolved is None:
+                        render_error(
+                            self.console,
+                            ValueError(f"Unknown model '{name}'"),
+                        )
+                        hint = f" Suggestions: {', '.join(suggestions[:5])}." if suggestions else ""
+                        self.console.print(
+                            f"  [yellow]Falling back to default. Run /model list to choose.{hint}[/yellow]"
+                        )
+                        self.model_name = "default"
+                        model = None
+                    else:
+                        if resolved != name:
+                            self.model_name = resolved
+                        try:
+                            model = settings.get_llm(resolved)
+                        except Exception as e:
+                            render_error(self.console, e)
+                            self.console.print(
+                                f"  [yellow]Unknown model '{resolved}' — falling back to default.[/yellow]"
+                            )
+                            self.model_name = "default"
+                            model = None
+                self._agent, self.tools = _build_agent(model)
             except Exception as e:
                 render_error(self.console, e)
                 raise RuntimeError(f"Failed to initialize Agent runtime: {e}") from e
@@ -58,6 +114,29 @@ class MotorCLI:
                 def get_completions(self, document, complete_event):
                     text = document.text_before_cursor
                     if not text.startswith("/"):
+                        return
+                    stripped = text[1:]
+                    # Second token after "/model " — complete model ids from
+                    # the cached catalogue (network-free; warm after /model).
+                    if " " in stripped:
+                        cmd, _, partial = stripped.partition(" ")
+                        if cmd.strip().lower() != "model":
+                            return
+                        candidates = ["list", "refresh"]
+                        try:
+                            from src.config.settings import peek_cached_models
+
+                            candidates += peek_cached_models()
+                        except Exception:
+                            pass
+                        low = partial.lower()
+                        for cand in candidates:
+                            if cand.lower().startswith(low) and cand != partial:
+                                yield Completion(
+                                    cand,
+                                    start_position=-len(partial),
+                                    display_meta="zen model" if cand not in ("list", "refresh") else "command",
+                                )
                         return
                     word = text.lstrip("/")
                     for name in sorted(self.commands):
@@ -161,15 +240,32 @@ class MotorCLI:
         """Interactive REPL loop."""
         from src.tools.search import get_hitl_enabled
 
-        # Render clean welcome banner immediately
+        _sweep_old_scratch()
+
+        try:
+            from apps.cli.project_wizard import ensure_project_on_launch
+
+            ensure_project_on_launch(self.console)
+        except Exception:
+            pass
+
+        # Render clean welcome banner immediately (tool_count shown after agent build)
         render_banner(
             self.console,
             session_id=self.current_session.id,
             model_name=self.model_name,
             hitl_enabled=get_hitl_enabled(),
-            tool_count=6,
+            tool_count=len(self.tools) if self.tools else None,
             expanded_view=self.expanded_view,
         )
+
+        # Non-blocking preflight: surface missing keys/specs/models before turn 1.
+        try:
+            from src.config.preflight import render_preflight, run_preflight
+
+            render_preflight(self.console, run_preflight())
+        except Exception:
+            pass
 
         while True:
             query = self._read_multiline()

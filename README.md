@@ -1,10 +1,14 @@
 # motor-deepagent
 
-**Terminal-first AI engineering agent for Synchronous Reluctance Motor (SynRM) design — PyMotorCAD simulation, rotor barrier optimization, structured research, and wiki management.**
+**Terminal-first AI engineering agent for general electric motor design — PyMotorCAD simulation, spec-driven optimization, structured research, and wiki management.**
 
 Built on **LangChain DeepAgents**, **LangGraph**, **PyMotorCAD (`ansys.motorcad.core`)**, **Tavily**, **Rich**, and **Prompt Toolkit**.
 
-> **Current mission:** Optimize the rotor flux-barrier geometry of a 45 kW SynRM to meet IE5 efficiency (≥ 96.0 %), 143 Nm rated torque at 3000 RPM, and power factor ≥ 0.85 — all without touching the locked stator geometry.
+> The agent is machine-general (SynRM, PMSM/IPM, induction, BLDC, …). The current
+> project's targets, bounds, and constraints come from the active project folder
+> (`$MOTOR_PROJECT` → `workspace/projects/active.json` → legacy `workspace/specs/active.json`).
+> Create one with `/project new <slug>` and switch with `/project use <slug>`.
+> An example template (`synrm_45kw`) ships under `workspace/specs/` for reference only.
 
 ---
 
@@ -44,11 +48,20 @@ Built on **LangChain DeepAgents**, **LangGraph**, **PyMotorCAD (`ansys.motorcad.
 
 ## Key Features
 
-### 1. PyMotorCAD Script Creation & Sandboxed Execution
-- **Unified 1-Turn Code Execution**: `execute_generated_motorcad_code` creates, sandboxes, executes, and auto-cleans Python simulation scripts in a single agent turn.
-- **Security & Path Traversal Guards**: Scripts cannot escape `workspace/scratch/` via relative or absolute path manipulation.
-- **Resource Protection**: Subprocess timeouts clamped strictly between 1 and 3600 s.
-- **Anti-Hallucination Safeguards**: System prompt enforces parameter-database lookup before any `set_variable` / `get_variable` call, dynamic name discovery, explicit context switches (`show_magnetic_context()`), and checkpoint backups before each candidate.
+### 1. PyMotorCAD Script Creation & Guarded Execution
+- **Unified 1-Turn Code Execution**: `execute_generated_motorcad_code` creates, scans, executes, and auto-logs Python simulation scripts in a single agent turn.
+- **Safety Scan**: generated code is statically scanned (strings/comments stripped) — destructive filesystem ops, process spawning, network/exfiltration, and dynamic exec are blocked before anything runs.
+- **Mutex**: Motor-CAD is single-instance; overlapping calls fail fast with `busy` instead of corrupting a solve.
+- **Solve Budget + Breaker**: FEA solves consume a per-session budget (default 200); N consecutive failures trip a circuit breaker (`/budget`, `/budget reset`).
+- **Experiment Ledger**: scripts print `CANDIDATE_RESULT: {...}` per candidate; the wrapper auto-logs + auto-scores into the active project's `workspace/projects/<slug>/ledger.jsonl` (`MOTOR_LEDGER_DIR` override supported).
+- **Opt-in Approval**: `MOTORCAD_REQUIRE_APPROVAL=1` gates every run behind HITL approval.
+- **Resource Protection**: Subprocess timeouts clamped 60–3600 s (FEA solves need ≥ 600 s).
+
+### 1b. Spec-Driven Motor Design (`src/motor/`, `workspace/projects/`)
+- **Machine Specs**: targets, parameter bounds, ordering/min/max constraints, locked params, and operating point live in JSON (`workspace/projects/<slug>/spec.json`) — new machines need a new project folder, no code. `workspace/specs/` holds the example template only.
+- **`validate_motor_params`**: single source of truth for geometry checks, called before every solve.
+- **`score_motor_result`**: computed spec compliance (objective + pass/fail), called after every solve.
+- **Seeded Sweeps**: `src.motor.sweep` (`latin_hypercube`, `neighbors`, `has_converged`, `clamp`) makes Phase-1/Phase-2 reproducible.
 
 ### 2. Native Filesystem Integration & Parameter Database
 - **DeepAgents Built-in Tools**: `grep`, `read_file`, `write_file`, `edit_file`, `ls`, `glob` — no redundant custom wrappers.
@@ -57,7 +70,13 @@ Built on **LangChain DeepAgents**, **LangGraph**, **PyMotorCAD (`ansys.motorcad.
 ### 3. Async Research Subgraph
 - **2-Stage LangGraph Pipeline**: `normalize_question` → `collect_context` → `synthesize_research_report`.
 - **Context Explosion Protection**: Strict relevance filtering + 1 MB per-file cap on wiki reads.
+- **LLM Fallback**: research calls retry on cheap provider models before failing.
 - **Exposed as async tool** (`research_subgraph`) — non-blocking relative to the main orchestrator.
+
+### 3b. Multi-Provider LLM Layer
+- **Direct static-key client** (no session/OAuth flows): `LLM_PROVIDER=zen` (paid tier), `openrouter` (free `:free` models via API), `nim` (free NVIDIA NIM key), or `groq` (free tier). One-var switch — `LLM_BASE_URL` follows the provider unless explicitly customized.
+- **Server-side gates are respected, not bypassed**: Zen free-tier models refuse direct API calls by design ("can only be used in OpenCode") — free usage goes through providers whose free tiers are API-accessible (NIM, OpenRouter, Groq), same approach as free-claude-code's provider routing.
+- **Live catalogue per provider**: `/model` lists whatever the active base URL serves.
 
 ### 4. Human-In-The-Loop Web Search & Session TODO Tracking
 - **Tavily Web Search**: General knowledge, IEEE standards, and technical benchmarks.
@@ -66,45 +85,21 @@ Built on **LangChain DeepAgents**, **LangGraph**, **PyMotorCAD (`ansys.motorcad.
 
 ---
 
-## Project: 45 kW SynRM Rotor Optimization
+## Project folders
 
-### Target Specification
+Each motor project is self-contained:
 
-| Parameter | Target | Tolerance |
-|---|---|---|
-| Output Power | 45 kW | ±2% |
-| Rated Torque | 143 Nm @ 3000 RPM | ±2% |
-| Rated Speed | 3000 RPM | exact |
-| Max Speed | 6000 RPM | must not degrade |
-| Efficiency Class | IE5 (≥ 96.0%) | must meet or exceed |
-| Power Factor | ≥ 0.85 | — |
-| Control Angle | 45° (fixed) | — |
-| Service Factor | 1.2 | must sustain |
+```
+workspace/projects/<slug>/
+├── spec.json       # targets, param bounds, constraints, locked list, operating point
+├── ledger.jsonl    # scored CANDIDATE_RESULT log (append-only)
+├── scratch/        # generated run scripts for this project
+├── models/         # .mot files and backups (e.g. best_so_far.mot)
+└── README.md       # project notes
+```
 
-### Optimization Variables (12 rotor barrier parameters)
-
-| Variable | Baseline | Search Range |
-|---|---|---|
-| `L1_Diameter` | 100 mm | 90–115 mm |
-| `L1_Bridge_Thickness` | 4 mm | 1–6 mm |
-| `L1_Web_Thickness` | 17 mm | 5–30 mm |
-| `L1_Outer_Angle_Offset` | −10° | −20–0° |
-| `L1_Outer_Thickness` | 4 mm | 2–8 mm |
-| `L1_Inner_Thickness` | 5 mm | 2–8 mm |
-| `L2_Diameter` | 130 mm | 120–150 mm |
-| `L2_Bridge_Thickness` | 5 mm | 1–6 mm |
-| `L2_Web_Thickness` | 50 mm | 20–70 mm |
-| `L3_Diameter` | 160 mm | 145–175 mm |
-| `L3_Bridge_Thickness` | 5 mm | 1–6 mm |
-| `L3_Web_Thickness` | 82 mm | 50–100 mm |
-
-### Stator — locked, not modified
-
-340 mm OD · 215 mm bore · 48 slots · 50C250 lamination · Parallel Tooth
-
-### Optimization Strategy
-1. **Phase 1 (Coarse Sweep)** — Latin Hypercube / grid over ~20–50 candidates, log `ShaftTorque` + `Efficiency`.
-2. **Phase 2 (Gradient Refinement)** — Coordinate descent from the best Phase 1 candidate until Δtorque < 0.5 Nm.
+Create/select on launch (`/project new <slug>`, `/project use <slug>`).
+An example template ships under `workspace/specs/` for reference.
 
 ---
 
@@ -115,20 +110,24 @@ motor-deepagent/
 ├── apps/cli/           # Terminal UI — Rich renderer, prompt-toolkit REPL, slash commands
 ├── src/
 │   ├── agent/          # DeepAgent factory & runtime (factory.py, runtime.py)
+│   ├── motor/          # Machine-agnostic domain: spec, validate, scoring, ledger, sweep
 │   ├── tools/
-│   │   ├── execution.py      # Sandboxed PyMotorCAD code execution tool
+│   │   ├── execution.py      # Guarded PyMotorCAD code execution (scan, mutex, budget, ledger)
+│   │   ├── motor/            # validate_motor_params + score_motor_result
 │   │   ├── search/           # Tavily web search (HITL-aware)
 │   │   ├── wiki/             # Wiki read/write helpers
-│   │   └── todo_tools.py     # Session TODO tracking tools
-│   ├── research/       # 3-node LangGraph research subgraph
-│   └── config/         # Settings & config.toml loader
+│   │   └── todo_tools.py     # Session TODO tracking tools (if present)
+│   ├── research/       # 3-node LangGraph research subgraph (LLM fallback enabled)
+│   └── config/         # Settings, Zen model discovery, preflight checks
 ├── workspace/
+│   ├── projects/<slug>/  # Canonical per-project spec, ledger, scratch/, models/
+│   ├── specs/          # Example machine spec template (reference only)
 │   ├── wiki/           # Living knowledge base — motor theory, PyMotorCAD docs
 │   │   └── motorcad/parameter_database/  # 13 000+ indexed parameters
-│   ├── scratch/        # (gitignored) per-session generated scripts
-│   └── experiments/    # (gitignored) optimization run data
-├── tests/              # pytest suite — CLI, execution sandbox, wiki, research
-├── AGENTS.md           # Codex/agent rules — variable names, constraints, file paths
+│   ├── scratch/        # (gitignored) legacy per-session scripts
+│   └── experiments/    # (gitignored) legacy per-project ledger data
+├── tests/              # pytest suite — CLI, execution guards, motor domain, wiki, research
+├── AGENTS.md           # General agent contract (project numbers live in project folders)
 ├── config.toml         # Runtime config (model, paths, HITL default)
 ├── langgraph.json      # LangGraph server config
 └── pyproject.toml      # Package build & dependencies
@@ -166,18 +165,21 @@ pip install -e ".[motorcad]"
 Copy `.env.example` → `.env` and fill in your keys:
 
 ```env
-# LLM Provider
-OPENAI_API_KEY=your-openai-key-here
+# LLM provider (one-var switch: zen | openrouter | nim | groq)
+OPENCODE_API_KEY=oc-...
+LLM_PROVIDER=zen
+LLM_MODEL=nemotron-3-ultra-free
 
 # Tavily Web Search
 TAVILY_API_KEY=tvly-your-tavily-key-here
 
-# Optional overrides
-MOTORCAD_SCRIPT_DIR=D:\SRM\Motor _CAD\ScriptFiles
+# Active project folder + Motor-CAD
+MOTOR_PROJECT=my_motor
+MOTORCAD_EXE=C:\Ansys_Motor-CAD\2025_1_1\Motor-CAD_2025_1_1.exe
 ```
 
 ### 3. Motor-CAD Requirement
-Ansys Motor-CAD v2025.1.1 must be installed. The agent auto-launches it via PyMotorCAD when executing simulation scripts.
+Ansys Motor-CAD must be installed (`MOTORCAD_EXE`, default `C:\Ansys_Motor-CAD\2025_1_1\Motor-CAD_2025_1_1.exe`). The agent auto-launches it via PyMotorCAD when executing simulation scripts. `.mot` model files live in each project's `models/` folder and are never committed.
 
 ---
 
@@ -196,7 +198,11 @@ motor
 | `/todo` | Manage session TODO tasks (`list`, `add <task>`, `done <id>`, `clear`) |
 | `/expanded` | Toggle expanded tool call details (inputs & outputs) |
 | `/hitl [on/off]` | Toggle Human-In-The-Loop web search approval |
-| `/model [name]` | View or switch active LLM model |
+| `/model [id\|number\|prefix\|list\|refresh]` | List Opencode Zen models (auto-fetched live) or switch the active LLM model |
+| `/project [list\|show\|new\|use]` | Manage project folders (each has its own spec/results/scripts) |
+| `/spec [list\|show\|use]` | Manage machine specs (legacy view over project spec files) |
+| `/budget [reset]` | Show Motor-CAD solve budget and breaker state |
+| `/preflight` | Re-run startup environment checks |
 | `/tools` | List all tools available to the agent |
 | `/session` | Manage sessions (`list`, `new`, `load <id>`, `export [path]`) |
 | `/clear` | Clear terminal screen |

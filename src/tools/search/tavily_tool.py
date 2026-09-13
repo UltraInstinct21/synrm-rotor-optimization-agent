@@ -1,28 +1,47 @@
-"""Tavily Internet Search Tool with Human-In-The-Loop (HITL) approval."""
+"""Tavily Internet Search Tool with Human-In-The-Loop (HITL) approval.
+
+Routing: use this for web / up-to-date / external info (IEEE papers, news,
+general questions). For LOCAL project knowledge use `wiki_tool` (single fact)
+or `research_subgraph` (multi-source synthesis over workspace/wiki only).
+"""
 
 from __future__ import annotations
 
 import json
 import os
-import sys
 from typing import Any
 
 from langchain_core.tools import tool
 
 import threading
 
-_hitl_local = threading.local()
-_hitl_local.enabled = True
+# Process-wide HITL flag (NOT thread-local): the CLI toggle (/hitl) and the
+# agent execution path must observe the same value even when they run on
+# different threads or inside asyncio tasks. Guarded by a lock.
+_hitl_lock = threading.Lock()
+_hitl_enabled: bool = True
 
 
 def set_hitl_enabled(enabled: bool) -> None:
     """Set global HITL approval mode for external web searches."""
-    _hitl_local.enabled = enabled
+    global _hitl_enabled
+    with _hitl_lock:
+        _hitl_enabled = bool(enabled)
 
 
 def get_hitl_enabled() -> bool:
     """Get current HITL approval state."""
-    return getattr(_hitl_local, 'enabled', True)
+    with _hitl_lock:
+        return _hitl_enabled
+
+
+def _headless_approval_default() -> bool:
+    """Auto-approve when no interactive terminal exists (servers, tests).
+
+    Controlled by MOTOR_DEEPAGENT_AUTO_APPROVE_SEARCH=1. Defaults to False so
+    interactive CLI sessions keep prompting.
+    """
+    return os.getenv("MOTOR_DEEPAGENT_AUTO_APPROVE_SEARCH", "").lower() in ("1", "true", "yes")
 
 
 @tool
@@ -31,27 +50,55 @@ def tavily_search(
     max_results: int = 5,
     topic: str = "general",
 ) -> str:
-    """Search the web for ANY information (general questions, news, technical topics, non-motor topics, etc.).
+    """Search the WEB for external / up-to-date info (IEEE, benchmarks, news, general Q&A).
+
+    Do NOT use for local project knowledge: single Motor-CAD facts go to
+    `wiki_tool(action="search")`; multi-doc local synthesis goes to
+    `research_subgraph`. Web search needs human approval per call unless the
+    session enabled auto-approve (/hitl off or A[l]ways).
 
     Args:
-        query: Search query string for the web.
-        max_results: Maximum number of search results to return (default 5).
+        query: Search query string for the web (non-empty, max ~500 chars).
+        max_results: Maximum results to return (clamped 1-10, default 5).
         topic: Search topic category ('general' or 'news').
 
     Returns:
         JSON string containing search results (title, url, snippet) or HITL rejection notice.
     """
-    # Human-In-The-Loop Approval Check
-    if get_hitl_enabled():
-        from apps.cli.theme import get_console
-        from apps.cli.display import request_hitl_approval
+    if not query or not query.strip():
+        return json.dumps({"status": "error", "error": "query parameter cannot be empty."}, indent=2)
+    query = query.strip()[:500]
+    try:
+        max_results = max(1, min(int(max_results), 10))
+    except (TypeError, ValueError):
+        return json.dumps({"status": "error", "error": "max_results must be an integer."}, indent=2)
+    if topic not in ("general", "news"):
+        topic = "general"
 
-        console = get_console()
-        approved = request_hitl_approval(
-            console=console,
-            tool_name="tavily_search",
-            details={"query": query, "topic": topic},
-        )
+    # Human-In-The-Loop Approval Check (decoupled from CLI so headless
+    # runtimes — run.py, tests, langgraph server — don't import prompt_toolkit
+    # at module scope and don't crash).
+    if get_hitl_enabled():
+        approved: bool | None = None
+        try:
+            from apps.cli.theme import get_console
+            from apps.cli.display import request_hitl_approval
+
+            console = get_console()
+            approved = request_hitl_approval(
+                console=console,
+                tool_name="tavily_search",
+                details={"query": query, "topic": topic},
+            )
+        except Exception:
+            # No interactive console (server/test/headless): fall back to env.
+            approved = _headless_approval_default()
+            if not approved:
+                return json.dumps({
+                    "status": "rejected",
+                    "reason": "No interactive terminal for HITL approval. Set MOTOR_DEEPAGENT_AUTO_APPROVE_SEARCH=1 or run via CLI with /hitl.",
+                    "query": query,
+                }, indent=2)
         if not approved:
             return json.dumps({
                 "status": "rejected",

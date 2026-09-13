@@ -79,7 +79,7 @@ def cmd_clear(cli: MotorCLI, args: str) -> None:  # noqa: ANN001
         session_id=cli.current_session.id,
         model_name=cli.model_name,
         hitl_enabled=get_hitl_enabled(),
-        tool_count=len(cli.tools) if cli.tools else 6,
+        tool_count=len(cli.tools) if cli.tools else None,
         expanded_view=cli.expanded_view,
     )
 
@@ -190,18 +190,72 @@ def cmd_todo(cli: MotorCLI, args: str) -> None:  # noqa: ANN001
             cli.console.print(f"\n{panel_str}\n")
 
 
-@command("model", "Show or switch the active LLM model", "Config")
+@command("model", "List Opencode Zen models or switch the active LLM model", "Config")
 def cmd_model(cli: MotorCLI, args: str) -> None:  # noqa: ANN001
-    if args:
-        cli.model_name = args.strip()
-        cli._agent = None  # Force rebuild on next query
-        cli.console.print(
-            f"  [bold green]Model switched -> [bright_cyan]{cli.model_name}[/bright_cyan][/bold green]  "
-            f"[dim](Agent will re-initialize on next query)[/dim]"
+    from src.config import settings
+
+    raw = (args or "").strip()
+
+    def _render_table(models: list[str], source: str) -> None:
+        table = Table(
+            title=f"[bold bright_cyan][MODELS] Opencode Zen Catalogue ({len(models)} models, {source})[/bold bright_cyan]",
+            border_style="cyan",
         )
-    else:
-        cli.console.print(f"  Active Model: [bold bright_cyan]{cli.model_name}[/bold bright_cyan]")
-        cli.console.print("  [dim]Usage: /model <model_name>[/dim]")
+        table.add_column("#", style="dim cyan", justify="right", no_wrap=True)
+        table.add_column("Model ID", style="bold cyan", no_wrap=True)
+        table.add_column("Active", style="bold yellow", justify="center")
+        active = cli.model_name if cli.model_name not in ("", "default") else settings.MODEL_DEFAULT
+        for i, mid in enumerate(models, 1):
+            marker = "*" if mid == active else ""
+            table.add_row(str(i), mid, marker)
+        cli.console.print()
+        cli.console.print(table)
+        cli.console.print(
+            "  [dim]Switch: /model <id or unique prefix> | Refresh: /model refresh "
+            "| Active default: "
+            f"[bold bright_cyan]{active}[/bold bright_cyan][/dim]\n"
+        )
+
+    # /model, /model list, /model ls, /model refresh — show the catalogue.
+    if not raw or raw.lower() in ("list", "ls", "refresh"):
+        force = raw.lower() == "refresh"
+        with cli.console.status("  [dim cyan]Fetching Opencode Zen models...[/dim cyan]", spinner="dots"):
+            models, source = settings.fetch_zen_models(force_refresh=force)
+        if source == "fallback":
+            cli.console.print(
+                "  [yellow]Live catalogue unreachable — showing fallback list. "
+                "Check network / LLM_BASE_URL, then /model refresh.[/yellow]"
+            )
+        _render_table(models, source)
+        return
+
+    # /model <id|number|prefix> — resolve then switch.
+    models, _ = settings.fetch_zen_models()
+    target = raw
+    if target.isdigit():
+        idx = int(target) - 1
+        if 0 <= idx < len(models):
+            target = models[idx]
+    resolved, suggestions = settings.resolve_model_name(target, models)
+    if resolved is None:
+        if suggestions:
+            cli.console.print(
+                f"  [bold red]Ambiguous/unknown model '{target}'. Did you mean:[/bold red]"
+            )
+            for s in suggestions:
+                cli.console.print(f"    [cyan]{s}[/cyan]")
+            cli.console.print("  [dim]Usage: /model <id or unique prefix> | /model list[/dim]")
+        else:
+            cli.console.print(f"  [bold red]Unknown model '{target}'.[/bold red]")
+            cli.console.print("  [dim]Usage: /model list to see available models.[/dim]")
+        return
+
+    cli.model_name = resolved
+    cli._agent = None  # Force rebuild on next query
+    cli.console.print(
+        f"  [bold green]Model switched -> [bright_cyan]{resolved}[/bright_cyan][/bold green]  "
+        f"[dim](Agent will re-initialize on next query)[/dim]"
+    )
 
 
 @command("tools", "Browse available agent tools and capabilities", "Config")
@@ -297,6 +351,13 @@ def cmd_config(cli: MotorCLI, args: str) -> None:  # noqa: ANN001
     table.add_column(style="white")
 
     table.add_row("LLM Model:", cli.model_name)
+    try:
+        from src.motor.spec import load_active_spec
+
+        _spec = load_active_spec()
+        table.add_row("Active Spec:", f"{_spec.project} [{_spec.machine_type}]")
+    except Exception as _e:
+        table.add_row("Active Spec:", f"unavailable ({_e})")
     table.add_row("Motor-CAD Status:", check_motorcad_env())
     table.add_row("HITL Approval Mode:", "ENABLED" if get_hitl_enabled() else "DISABLED")
     table.add_row("Expanded View:", f"{cli.expanded_view} (Ctrl+O)")
@@ -355,3 +416,202 @@ def cmd_copy(cli: MotorCLI, args: str) -> None:  # noqa: ANN001
         out_file.parent.mkdir(parents=True, exist_ok=True)
         out_file.write_text(last_assistant_msg, encoding="utf-8")
         cli.console.print(f"  [yellow]pyperclip not installed. Saved last response to:[/yellow] [underline]{out_file}[/underline]")
+
+
+@command("spec", "Manage the active machine project spec (list, show, use)", "Config")
+def cmd_spec(cli: MotorCLI, args: str) -> None:  # noqa: ANN001
+    from src.motor.spec import list_specs, load_spec, resolve_active_spec_path, specs_dir
+
+    parts = (args or "").strip().split(maxsplit=1)
+    sub = parts[0].lower() if parts else "list"
+    rest = parts[1] if len(parts) > 1 else ""
+
+    if sub in ("list", "ls", ""):
+        specs = list_specs()
+        if not specs:
+            cli.console.print(f"  [yellow]No specs in {specs_dir()}.[/yellow]")
+            return
+        table = Table(title="[bold bright_cyan][SPECS] Machine Projects[/bold bright_cyan]", border_style="cyan")
+        table.add_column("Active", style="bold yellow", justify="center")
+        table.add_column("Name", style="bold cyan", no_wrap=True)
+        table.add_column("Project", style="white")
+        table.add_column("Type", style="dim cyan")
+        for s in specs:
+            marker = "*" if s.get("active") else ""
+            table.add_row(marker, s.get("name", "?"), s.get("project", s.get("error", "?")), s.get("machine_type", ""))
+        cli.console.print()
+        cli.console.print(table)
+        cli.console.print("  [dim]Switch project: /spec use <name> | Details: /spec show <name>[/dim]\n")
+    elif sub == "show":
+        name = rest.strip() or "active"
+        try:
+            if name == "active":
+                from src.motor.spec import load_active_spec
+
+                spec = load_active_spec()
+                src = resolve_active_spec_path()
+            else:
+                spec = load_spec(specs_dir() / f"{name}.json")
+                src = specs_dir() / f"{name}.json"
+            table = Table.grid(padding=(0, 2))
+            table.add_column(style="bold cyan")
+            table.add_column(style="white")
+            table.add_row("Project:", spec.project)
+            table.add_row("Machine:", spec.machine_type)
+            table.add_row("Source:", str(src))
+            table.add_row("Params:", f"{len(spec.params)} ({', '.join(list(spec.params)[:8])}{'...' if len(spec.params) > 8 else ''})")
+            table.add_row("Targets:", ", ".join(
+                f"{t['key']}={t.get('target', t.get('min'))}{'±' + str(t['tol_pct']) + '%' if 'tol_pct' in t else ' (min)'}" for t in spec.targets))
+            table.add_row("Locked:", f"{len(spec.locked)} params")
+            table.add_row("Operating point:", ", ".join(f"{k}={v}" for k, v in spec.operating_point.items()))
+            panel = Panel(table, title="[bold bright_cyan][SPEC] Active Machine Project[/bold bright_cyan]",
+                          border_style="cyan", padding=(1, 2))
+            cli.console.print()
+            cli.console.print(panel)
+            cli.console.print()
+        except Exception as e:
+            cli.console.print(f"  [bold red]Cannot show spec '{name}': {e}[/bold red]")
+    elif sub == "use":
+        if not rest.strip():
+            cli.console.print("  [yellow]Usage: /spec use <name>[/yellow]")
+            return
+        src = specs_dir() / f"{rest.strip()}.json"
+        if not src.exists():
+            cli.console.print(f"  [bold red]Spec '{rest.strip()}' not found.[/bold red]  [dim]/spec list[/dim]")
+            return
+        try:
+            specs_dir().mkdir(parents=True, exist_ok=True)
+            (specs_dir() / "active.json").write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+            spec = load_spec(src)
+            cli.console.print(f"  [bold green]Active project -> [bright_cyan]{spec.project}[/bright_cyan][/bold green] [{spec.machine_type}]\n")
+        except Exception as e:
+            cli.console.print(f"  [bold red]Failed to activate spec: {e}[/bold red]")
+    else:
+        cli.console.print("  [yellow]Usage: /spec [list|show <name>|use <name>][/yellow]")
+
+
+@command("project", "Manage project folders (list, show, new, use)", "Config")
+def cmd_project(cli: MotorCLI, args: str) -> None:  # noqa: ANN001
+    from src.config.projects import (
+        create_project,
+        list_projects,
+        project_dir,
+        set_active_slug,
+        spec_path,
+    )
+
+    parts = (args or "").strip().split(maxsplit=1)
+    sub = parts[0].lower() if parts else "list"
+    rest = parts[1] if len(parts) > 1 else ""
+
+    if sub in ("list", "ls", ""):
+        try:
+            projects = list_projects()
+        except Exception as e:
+            cli.console.print(f"  [bold red]Cannot list projects: {e}[/bold red]")
+            return
+        if not projects:
+            cli.console.print("  [yellow]No projects found. Create one with /project new <slug>[/yellow]")
+            return
+        table = Table(title="[bold bright_cyan][PROJECTS] Motor Projects[/bold bright_cyan]", border_style="cyan")
+        table.add_column("Active", style="bold yellow", justify="center")
+        table.add_column("Slug", style="bold cyan", no_wrap=True)
+        table.add_column("Project", style="white")
+        table.add_column("Type", style="dim cyan")
+        for p in projects:
+            marker = "*" if p.get("active") else ""
+            table.add_row(marker, p.get("slug", "?"), p.get("project", p.get("error", "?")), p.get("machine_type", ""))
+        cli.console.print()
+        cli.console.print(table)
+        cli.console.print("  [dim]Switch project: /project use <slug> | Details: /project show <slug> | New: /project new <slug>[/dim]\n")
+    elif sub == "show":
+        from src.motor.spec import load_active_spec, load_spec, resolve_active_spec_path
+
+        name = rest.strip() or "active"
+        try:
+            if name == "active":
+                spec = load_active_spec()
+                src = resolve_active_spec_path()
+                slug = getattr(spec, "slug", "active")
+            else:
+                src = spec_path(name)
+                spec = load_spec(src)
+                slug = name
+            table = Table.grid(padding=(0, 2))
+            table.add_column(style="bold cyan")
+            table.add_column(style="white")
+            table.add_row("Project:", spec.project)
+            table.add_row("Machine:", spec.machine_type)
+            table.add_row("Source:", str(src))
+            try:
+                table.add_row("Directory:", str(project_dir(slug)))
+            except Exception:
+                pass
+            table.add_row("Params:", f"{len(spec.params)} ({', '.join(list(spec.params)[:8])}{'...' if len(spec.params) > 8 else ''})")
+            table.add_row("Targets:", ", ".join(
+                f"{t['key']}={t.get('target', t.get('min'))}{'±' + str(t['tol_pct']) + '%' if 'tol_pct' in t else ' (min)'}" for t in spec.targets))
+            table.add_row("Locked:", f"{len(spec.locked)} params ({', '.join(spec.locked[:8])}{'...' if len(spec.locked) > 8 else ''})" if spec.locked else "0 params")
+            table.add_row("Operating point:", ", ".join(f"{k}={v}" for k, v in spec.operating_point.items()) or "-")
+            panel = Panel(table, title="[bold bright_cyan][PROJECT] Motor Project[/bold bright_cyan]",
+                          border_style="cyan", padding=(1, 2))
+            cli.console.print()
+            cli.console.print(panel)
+            cli.console.print()
+        except Exception as e:
+            cli.console.print(f"  [bold red]Cannot show project '{name}': {e}[/bold red]")
+    elif sub == "new":
+        tokens = rest.strip().split()
+        if not tokens:
+            cli.console.print("  [yellow]Usage: /project new <slug> [display name...][/yellow]")
+            return
+        slug = tokens[0]
+        display = " ".join(tokens[1:]) if len(tokens) > 1 else slug
+        try:
+            dest = create_project(slug, project=display)
+            cli.console.print(f"  [bold green]Created project [bright_cyan]{slug}[/bright_cyan] at {dest}[/bold green]")
+        except FileExistsError:
+            cli.console.print(f"  [bold red]Project '{slug}' already exists.[/bold red]")
+        except Exception as e:
+            cli.console.print(f"  [bold red]Failed to create project '{slug}': {e}[/bold red]")
+    elif sub == "use":
+        slug = rest.strip()
+        if not slug:
+            cli.console.print("  [yellow]Usage: /project use <slug>[/yellow]")
+            return
+        try:
+            set_active_slug(slug)
+            cli.console.print(f"  [bold green]Active project -> [bright_cyan]{slug}[/bright_cyan][/bold green]")
+        except FileNotFoundError:
+            cli.console.print(f"  [bold red]Project '{slug}' not found.[/bold red]  [dim]/project list[/dim]")
+        except Exception as e:
+            cli.console.print(f"  [bold red]Failed to activate project '{slug}': {e}[/bold red]")
+    else:
+        cli.console.print("  [yellow]Usage: /project [list|show <slug>|new <slug> [name]|use <slug>][/yellow]")
+
+
+@command("budget", "Show Motor-CAD solve budget and breaker state (reset)", "Config")
+def cmd_budget(cli: MotorCLI, args: str) -> None:  # noqa: ANN001
+    from src.tools.execution import get_budget_status, reset_execution_budget
+
+    if (args or "").strip().lower() == "reset":
+        status = reset_execution_budget()
+        cli.console.print("  [bold green]Solve budget reset.[/bold green]")
+    else:
+        status = get_budget_status()
+    table = Table.grid(padding=(0, 2))
+    table.add_column(style="bold cyan")
+    table.add_column(style="white")
+    table.add_row("Solves used:", f"{status['solves_used']}/{status['solves_limit']} ({status['solves_remaining']} remaining)")
+    table.add_row("Consecutive failures:", f"{status['consecutive_failures']}/{status['failure_limit']}")
+    panel = Panel(table, title="[bold bright_cyan][BUDGET] Motor-CAD Execution[/bold bright_cyan]",
+                  border_style="cyan", padding=(1, 2))
+    cli.console.print()
+    cli.console.print(panel)
+    cli.console.print("  [dim]Reset counters: /budget reset | Limits via $MOTORCAD_MAX_SOLVES / $MOTORCAD_MAX_CONSECUTIVE_FAILURES[/dim]\n")
+
+
+@command("preflight", "Re-run startup environment checks", "General")
+def cmd_preflight(cli: MotorCLI, args: str) -> None:  # noqa: ANN001
+    from src.config.preflight import render_preflight, run_preflight
+
+    render_preflight(cli.console, run_preflight())

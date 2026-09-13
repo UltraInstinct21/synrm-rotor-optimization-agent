@@ -1,0 +1,169 @@
+{
+  "project": "45kW SynRM rotor optimization",
+  "slug": "synrm_45kw",
+  "machine_type": "SynRM",
+  "description": "Optimize rotor flux-barrier geometry of a 45 kW SynRM. Stator is locked; only rotor barrier parameters may vary.",
+  "operating_point": {
+    "Shaft_Speed_[RPM]": 3000,
+    "PhaseAdvance": 45,
+    "TorquePointsPerCycle": 30,
+    "TorqueNumberCycles": 1,
+    "TorqueCalculation": true
+  },
+  "targets": [
+    {
+      "key": "torque",
+      "label": "Rated torque (Nm @ 3000 RPM)",
+      "target": 143.0,
+      "tol_pct": 2.0
+    },
+    {
+      "key": "output_power_kw",
+      "label": "Output power (kW)",
+      "target": 45.0,
+      "tol_pct": 2.0
+    },
+    {
+      "key": "efficiency_pct",
+      "label": "Efficiency IE5 (%)",
+      "min": 96.0
+    },
+    {
+      "key": "power_factor",
+      "label": "Power factor",
+      "min": 0.85
+    }
+  ],
+  "params": {
+    "L1_Diameter": {
+      "min": 90,
+      "max": 115,
+      "baseline": 100,
+      "unit": "mm"
+    },
+    "L1_Bridge_Thickness": {
+      "min": 1,
+      "max": 6,
+      "baseline": 4,
+      "unit": "mm"
+    },
+    "L1_Web_Thickness": {
+      "min": 5,
+      "max": 30,
+      "baseline": 17,
+      "unit": "mm"
+    },
+    "L1_Outer_Angle_Offset": {
+      "min": -20,
+      "max": 0,
+      "baseline": -10,
+      "unit": "deg"
+    },
+    "L1_Outer_Thickness": {
+      "min": 2,
+      "max": 8,
+      "baseline": 4,
+      "unit": "mm"
+    },
+    "L1_Inner_Thickness": {
+      "min": 2,
+      "max": 8,
+      "baseline": 5,
+      "unit": "mm"
+    },
+    "L2_Diameter": {
+      "min": 120,
+      "max": 150,
+      "baseline": 130,
+      "unit": "mm"
+    },
+    "L2_Bridge_Thickness": {
+      "min": 1,
+      "max": 6,
+      "baseline": 5,
+      "unit": "mm"
+    },
+    "L2_Web_Thickness": {
+      "min": 20,
+      "max": 70,
+      "baseline": 50,
+      "unit": "mm"
+    },
+    "L3_Diameter": {
+      "min": 145,
+      "max": 175,
+      "baseline": 160,
+      "unit": "mm"
+    },
+    "L3_Bridge_Thickness": {
+      "min": 1,
+      "max": 6,
+      "baseline": 5,
+      "unit": "mm"
+    },
+    "L3_Web_Thickness": {
+      "min": 50,
+      "max": 100,
+      "baseline": 82,
+      "unit": "mm"
+    }
+  },
+  "order_chains": [
+    [
+      "L1_Diameter",
+      "L2_Diameter",
+      "L3_Diameter"
+    ]
+  ],
+  "minimums": [
+    {
+      "param": "L1_Diameter",
+      "min": 80,
+      "reason": "must exceed shaft diameter (80 mm)"
+    },
+    {
+      "param": "L1_Bridge_Thickness",
+      "min": 1,
+      "reason": "mechanical minimum"
+    },
+    {
+      "param": "L2_Bridge_Thickness",
+      "min": 1,
+      "reason": "mechanical minimum"
+    },
+    {
+      "param": "L3_Bridge_Thickness",
+      "min": 1,
+      "reason": "mechanical minimum"
+    }
+  ],
+  "maximums": [
+    {
+      "param": "L3_Diameter",
+      "max": 214,
+      "reason": "must be below rotor diameter (214 mm)"
+    }
+  ],
+  "locked": [
+    "Stator_Lam_Dia",
+    "Stator_bore",
+    "Slot_Number",
+    "Tooth_Width",
+    "Slot_Depth",
+    "Slot_Corner_Radius",
+    "Tooth_Tip_Depth",
+    "Slot_Opening",
+    "Tooth_Tip_Angle",
+    "Sleeve_Thickness",
+    "WireDiameter",
+    "Copper_Slot_Fill",
+    "Liner_Thickness",
+    "EWdg_Fill",
+    "Pole_Number",
+    "RotorType_Str",
+    "Barrier_Layers",
+    "Airgap",
+    "Shaft_Dia"
+  ],
+  "notes": "Rotor diameter 214 mm is derived (215 mm bore - 2x0.5 mm airgap). Control angle 45 deg electrical is fixed."
+}

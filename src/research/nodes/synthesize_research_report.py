@@ -2,11 +2,37 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from typing import Any
 
 from src.config import settings
+from src.research.prompts.research_prompts import (
+    SYNTHESIZE_REPORT_SYSTEM,
+    SYNTHESIZE_REPORT_TEMPLATE,
+)
+from src.research.schemas import ReportOutput
 from src.research.state import ResearchState
+
+
+def _parse_report(content: str) -> dict[str, Any] | None:
+    """Parse synthesis JSON robustly (strip fences, extract {...}, validate)."""
+    text = (content or "").strip()
+    if not text:
+        return None
+    if "```" in text:
+        text = "\n".join(l for l in text.splitlines() if not l.strip().startswith("```"))
+    start, end = text.find("{"), text.rfind("}")
+    candidate = text[start:end + 1] if start != -1 and end > start else text
+    try:
+        validated = ReportOutput.model_validate_json(candidate)
+        return validated.model_dump()
+    except Exception:
+        pass
+    try:
+        return json.loads(candidate)
+    except Exception:
+        return None
 
 
 def synthesize_research_report(state: ResearchState) -> dict[str, Any]:
@@ -48,40 +74,20 @@ def synthesize_research_report(state: ResearchState) -> dict[str, Any]:
 
     context_str = "\n\n".join(snippets)
 
-    prompt = f"""You are a motor engineering research assistant. Analyze the provided source snippets and synthesize a comprehensive technical answer.
-
-Question: {question}
-
-Source Context:
-{context_str}
-
-Respond with a JSON object containing:
-- "summary": Clear, direct answer to the user's question based on context.
-- "extracted_claims": List of key technical claims/facts extracted.
-- "equations_or_constraints": List of design equations or geometric constraints mentioned.
-- "conflicts_or_uncertainties": Any conflicting statements or missing details.
-- "recommended_wiki_updates": Suggested updates to wiki pages if needed.
-- "recommended_code_targets": Suggested PyMotorCAD parameters or python run files to modify.
-- "confidence": "high", "medium", or "low".
-"""
+    prompt = SYNTHESIZE_REPORT_TEMPLATE.format(question=question, context_str=context_str)
 
     llm = settings.get_llm(settings.MODEL_RESEARCH)
 
     from langchain_core.messages import SystemMessage, HumanMessage
-    import json
 
     try:
-        response = llm.invoke([
-            SystemMessage(content="You are an expert motor engineering research synthesizer. Output strictly valid JSON matching the requested structure."),
+        response = settings.invoke_with_fallback(llm, [
+            SystemMessage(content=SYNTHESIZE_REPORT_SYSTEM),
             HumanMessage(content=prompt),
         ])
-        content_text = response.content or "{}"
-        # Strip markdown code blocks if present
-        if "```" in content_text:
-            lines = content_text.splitlines()
-            content_text = "\n".join(l for l in lines if not l.strip().startswith("```"))
-        
-        parsed = json.loads(content_text.strip())
+        parsed = _parse_report(response.content or "") or {}
+        if not parsed.get("summary"):
+            raise ValueError("empty synthesis output")
     except Exception as e:
         parsed = {
             "summary": f"Failed to parse research synthesis: {e}",
