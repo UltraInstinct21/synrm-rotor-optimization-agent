@@ -64,6 +64,10 @@ workspace/raw/*
 !workspace/research_cache/.gitkeep
 !workspace/raw/.gitkeep
 
+# ─── Per-project generated scripts & ledgers (never commit) ──────────────────
+workspace/projects/*/scratch/
+workspace/projects/*/ledger.jsonl
+
 # ─── Agent Runtime Workspace ──────────────────────────────────────────────────
 workspace/memory/
 workspace/wiki/log.md
