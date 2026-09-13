@@ -68,6 +68,9 @@ workspace/raw/*
 workspace/projects/*/scratch/
 workspace/projects/*/ledger.jsonl
 
+# ─── Motor-CAD FEA result files (regenerated every solve) ────────────────────
+FEResultsData/
+
 # ─── Agent Runtime Workspace ──────────────────────────────────────────────────
 workspace/memory/
 workspace/wiki/log.md
