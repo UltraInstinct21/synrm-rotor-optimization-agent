@@ -96,3 +96,6 @@ Thumbs.db
 
 # ─── MCP / Superpowers (local tool configs) ────────────────────────────────────
 .superpowers/
+
+# ——— Video source files (GIF previews are committed instead) ——————————————————
+assets/*.mp4

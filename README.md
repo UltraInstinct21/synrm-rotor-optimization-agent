@@ -8,15 +8,11 @@ Built with [LangChain DeepAgents](https://github.com/langchain-ai/deepagents) ·
 
 ### Terminal Agent
 
-https://github.com/user-attachments/assets/terminal_agent.mp4
-
-<video src="assets/terminal_agent.mp4" controls width="100%"></video>
+![Terminal Agent Demo](assets/terminal_agent.gif)
 
 ### Agent Brain — LLM Wiki & Knowledge System
 
-https://github.com/user-attachments/assets/terminal_agent_brain.mp4
-
-<video src="assets/terminal_agent_brain.mp4" controls width="100%"></video>
+![Agent Brain Demo](assets/terminal_agent_brain.gif)
 
 ## Quick Start
 
