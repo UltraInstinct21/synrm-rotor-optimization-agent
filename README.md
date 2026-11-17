@@ -26,34 +26,22 @@ Built on **LangChain DeepAgents**, **LangGraph**, **PyMotorCAD (`ansys.motorcad.
 
 ## System Architecture
 
-```text
-                     ┌─────────────────────────────────────────┐
-                     │    User / Terminal CLI (apps/cli/)      │
-                     │    - Rich Markdown & Live Token Stream  │
-                     │    - Ctrl+O Expanded Tool Details View  │
-                     │    - Ctrl+C Session Memory Interrupts   │
-                     │    - Dynamic Task Status & Toolbar      │
-                     │    - Slash Commands (/hitl /model ...)  │
-                     └────────────────────┬────────────────────┘
-                                          │
-                                          ▼
-                     ┌─────────────────────────────────────────┐
-                     │   DeepAgent Orchestrator (factory.py)   │
-                     │   - System Prompt & Anti-Hallucination  │
-                     │   - Tool Routing & Memory Checkpointing │
-                     │   - config.toml & Settings Manager      │
-                     └────┬──────────┬──────────┬─────────────┘
-                          │          │          │
-          ┌───────────────┴──┐  ┌────┴──────┐  ┌┴──────────────────────┐
-          │ PyMotorCAD       │  │ Research  │  │ Native Filesystem +   │
-          │ Execution Tool   │  │ Subgraph  │  │ Wiki/Search Tools     │
-          │ (execution.py)   │  │(LangGraph │  │ (wiki/, search/,      │
-          │                  │  │ pipeline) │  │  todo_tools.py)       │
-          │ - Sandboxed 1-   │  │           │  │                       │
-          │   Turn Scripts   │  │ normalize │  │ - Parameter DB lookup │
-          │ - Path Guards    │  │ -> collect│  │ - Tavily Web Search   │
-          │ - Auto Cleanup   │  │ -> synth. │  │ - TODO tracking       │
-          └──────────────────┘  └───────────┘  └───────────────────────┘
+```mermaid
+flowchart TD
+    CLI["<b>User / Terminal CLI</b><br/>apps/cli/<br/><br/>Rich Markdown & Live Token Stream<br/>Ctrl+O Expanded Tool Details<br/>Ctrl+C Session Memory Interrupts<br/>Dynamic Task Status & Toolbar<br/>Slash Commands: /hitl /model ..."]
+
+    ORCH["<b>DeepAgent Orchestrator</b><br/>factory.py<br/><br/>System Prompt & Anti-Hallucination<br/>Tool Routing & Memory Checkpointing<br/>config.toml & Settings Manager"]
+
+    MCAD["<b>PyMotorCAD Execution</b><br/>execution.py<br/><br/>Sandboxed 1-Turn Scripts<br/>Path Guards<br/>Auto Cleanup"]
+
+    RES["<b>Research Subgraph</b><br/>LangGraph Pipeline<br/><br/>normalize<br/>collect<br/>synthesize"]
+
+    FS["<b>Filesystem + Wiki/Search</b><br/>wiki/, search/, todo_tools.py<br/><br/>Parameter DB Lookup<br/>Tavily Web Search<br/>TODO Tracking"]
+
+    CLI --> ORCH
+    ORCH --> MCAD
+    ORCH --> RES
+    ORCH --> FS
 ```
 
 ---
